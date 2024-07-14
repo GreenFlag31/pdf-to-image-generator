@@ -8,6 +8,7 @@ import { PDF_TO_PNG_OPTIONS_DEFAULTS } from './const';
 import { CanvasContext, NodeCanvasFactory } from './node.canvas.factory';
 import { initialisePDFProperties } from './props.to.pdf.doc.init.params';
 import { log, time, timeEnd } from 'node:console';
+import { createWorker } from './worker/create-worker';
 
 // legacy
 // "pdfjs-dist": "^4.0.379"
@@ -70,15 +71,16 @@ export class PDFToPNGConvertion {
     outputFolder: string | undefined,
     viewportScale: number | undefined,
     resolvedPagesPromises: pdfApiTypes.PDFPageProxy[]
-  ): Promise<[Promise<void>[], PngPageOutput[]]> {
+  ): Promise<[pdfApiTypes.RenderTask[], PngPageOutput[]]> {
     const pngPagesOutput: PngPageOutput[] = [];
-    const renderPromises: Promise<void>[] = [];
+    const renderPromises: pdfApiTypes.RenderTask[] = [];
 
     if (outputFolder) {
       await fsPromises.mkdir(outputFolder, { recursive: true });
     }
 
     for (const page of resolvedPagesPromises) {
+      // vérifier si répétitions nécessaires
       const viewport = page.getViewport({
         scale: viewportScale || PDF_TO_PNG_OPTIONS_DEFAULTS.viewportScale,
       });
@@ -90,7 +92,8 @@ export class PDFToPNGConvertion {
         viewport,
       };
 
-      const renderPromise = page.render(renderContext).promise;
+      // transformer pour ne pas contenir de promesses
+      const renderPromise = page.render(renderContext);
       renderPromises.push(renderPromise);
 
       const currentPageNumber = page.pageNumber;
@@ -151,8 +154,24 @@ export class PDFToPNGConvertion {
       resolvedPagesPromises
     );
 
+    const RENDER_PER_WORKER = 3;
+    const arrayOfWorkers: Promise<void>[] = [];
+
+    for (
+      let index = 0;
+      index + RENDER_PER_WORKER <= renderPromises.length;
+      index += RENDER_PER_WORKER
+    ) {
+      const lb = index;
+      const ub = index + index;
+      const slicedRenderTask = renderPromises.slice(lb, ub);
+
+      const worker = createWorker(slicedRenderTask);
+      arrayOfWorkers.push(worker);
+    }
+
     time('render');
-    await Promise.all(renderPromises);
+    await Promise.all(arrayOfWorkers);
     timeEnd('render');
     await this.pdfDocument.cleanup();
     timeEnd('start');

@@ -1,18 +1,19 @@
-import { parentPort, Worker } from 'worker_threads';
+import { Worker } from 'worker_threads';
+import * as pdfApiTypes from 'pdfjs-dist/types/src/display/api';
 
-export function createWorker(data: any) {
+export function createWorker(data: pdfApiTypes.RenderTask[]) {
   return new Promise<void>((resolve, reject) => {
-    const worker = new Worker('worker.js');
+    const worker = new Worker('./render.js');
 
-    parentPort!.postMessage(data);
+    worker.postMessage(data);
 
-    parentPort!.on('message', (message) => {
+    worker.on('message', (message) => {
       worker.terminate();
       console.log('Message from worker:', message);
       resolve(message);
     });
 
-    parentPort!.on('error', (error) => {
+    worker.on('error', (error) => {
       worker.terminate();
       console.error('Error from worker:', error);
       reject(error);

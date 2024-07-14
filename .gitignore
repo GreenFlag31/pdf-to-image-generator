@@ -3,6 +3,8 @@ out
 test-results
 .vscode
 
+upload
+
 # Logs
 logs
 *.log
