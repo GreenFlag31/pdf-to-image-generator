@@ -1,7 +1,7 @@
 {
   "name": "pdf-to-png-converter",
-  "version": "3.2.0",
-  "description": "Node.js utility to convert PDF file/buffer pages to PNG files/buffers with no native dependencies.",
+  "version": "0.0.1",
+  "description": "Performant Node.js library to convert PDF file/buffer pages to PNG files/buffers.",
   "keywords": [
     "pdf",
     "pdf to png",
@@ -9,25 +9,28 @@
     "pdf file to image",
     "pdf buffer to image"
   ],
-  "homepage": "https://github.com/dichovsky/pdf-to-png-converter#readme",
+  "homepage": "https://github.com/GreenFlag31/pdf-to-png-converter#readme",
   "bugs": {
-    "url": "https://github.com/dichovsky/pdf-to-png-converter/issues"
+    "url": "https://github.com/GreenFlag31/pdf-to-png-converter/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dichovsky/pdf-to-png-converter.git"
+    "url": "git+https://github.com/GreenFlag31/pdf-to-png-converter.git"
   },
   "license": "MIT",
-  "author": "Igor Magdich <magdich.igor@gmail.com>",
-  "main": "out/index.js",
-  "types": "out/index.d.ts",
+  "author": "Manu Claeys <unam31@gmail.com>",
+  "contributors": [
+    "Igor Magdich <magdich.igor@gmail.com>"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "files": [
-    "/out"
+    "/dist"
   ],
   "scripts": {
     "build": "tsc",
     "build:test": "tsc --pretty  --project tsconfig.test.json",
-    "clean": "npx rimraf ./out ./coverage ./test-results",
+    "clean": "npx rimraf ./dist ./coverage ./test-results",
     "docker:build": "docker build --compress -t test-pdf-to-png-converter .",
     "predocker:run": "npm run clean",
     "docker:run": "docker run --rm -it -v $PWD/test-results:/usr/pkg/test-results test-pdf-to-png-converter",
