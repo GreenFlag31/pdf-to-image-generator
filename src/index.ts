@@ -3,7 +3,7 @@ export type { PdfToPngOptions } from './types/pdf.to.png.options';
 export type { PngPageOutput } from './types/png.page.output';
 import express from 'express';
 import path from 'path';
-import { PDFToPNGConvertion } from './pdf.to.png';
+import { pdfToPng, PDFToPNGConversion } from './pdf.to.png';
 
 const app = express();
 
@@ -17,9 +17,12 @@ app.get('/pdf-to-png', async (req, res) => {
     // useSystemFonts: true,
   };
 
-  const pdf2 = new PDFToPNGConvertion(pa, props);
-  await pdf2.convert();
-  res.send('ok');
+  const pdfConversion = new PDFToPNGConversion(pa, props);
+  const pdf = await pdfConversion.convert();
+  const stats = await pdfConversion.getTotalSizeOnDisk();
+
+  // await pdfToPng(pa, props);
+  res.send({ stats });
 });
 
 app.listen(3006, () => {

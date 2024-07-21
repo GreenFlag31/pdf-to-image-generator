@@ -1,5 +1,5 @@
 import path from 'path';
-import { pdfToPng, PDFToPNGConvertion } from '../pdf.to.png';
+import { pdfToPng, PDFToPNGConversion } from '../pdf.to.png';
 import { log } from 'console';
 
 async function convert() {
@@ -13,7 +13,7 @@ async function convert() {
   };
   // const pdf = await pdfToPng(pa, props);
 
-  const pdf2 = new PDFToPNGConvertion(pa, props);
+  const pdf2 = new PDFToPNGConversion(pa, props);
   await pdf2.convert();
   log('done');
 }
