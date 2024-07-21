@@ -1,21 +1,21 @@
-import { Canvas, CanvasRenderingContext2D } from 'canvas';
+import { Canvas } from 'canvas';
 import { createReadStream, createWriteStream, promises as fsPromises, Stats } from 'node:fs';
 import { parse, resolve } from 'node:path';
 import * as pdfApiTypes from 'pdfjs-dist/types/src/display/api';
-import * as pdfDisplayUtilsTypes from 'pdfjs-dist/types/src/display/display_utils';
 import { PdfToPngOptions, PngPageOutput } from '.';
 import { PDF_TO_PNG_OPTIONS_DEFAULTS } from './const';
 import { CanvasContext, NodeCanvasFactory } from './node.canvas.factory';
 import { initialisePDFProperties } from './props.to.pdf.doc.init.params';
 import { log, time, timeEnd } from 'node:console';
+import { finished } from 'node:stream/promises';
 
 // legacy
 // "pdfjs-dist": "^4.0.379"
 
 export class PDFToPNGConversion {
-  private pageName = '';
+  private pageName: undefined | string;
   private pdfDocument!: pdfApiTypes.PDFDocumentProxy;
-  private pdfDocInitParams: pdfApiTypes.DocumentInitParameters = {};
+  private pdfDocInitParams: PdfToPngOptions = PDF_TO_PNG_OPTIONS_DEFAULTS;
   private canvasFactory!: NodeCanvasFactory;
   private canvasAndContext!: CanvasContext;
   private pngPagesOutput: PngPageOutput[] = [];
@@ -26,12 +26,11 @@ export class PDFToPNGConversion {
     return this.pageName;
   }
 
-  private setPageName(outputFileMask: string | undefined) {
+  private setPageName(outputFileName: string | undefined) {
     const isBuffer = Buffer.isBuffer(this.pdfFilePathOrBuffer);
-    this.pageName = PDF_TO_PNG_OPTIONS_DEFAULTS.outputFileMask;
 
-    if (outputFileMask) {
-      this.pageName = outputFileMask;
+    if (outputFileName) {
+      this.pageName = outputFileName;
     } else if (!isBuffer) {
       this.pageName = parse(this.pdfFilePathOrBuffer as string).name;
     }
@@ -81,16 +80,11 @@ export class PDFToPNGConversion {
     return pagesPromises;
   }
 
-  private async renderPages(
-    outputFolder: string | undefined,
+  private renderPages(
     viewportScale: number | undefined,
     resolvedPagesPromises: pdfApiTypes.PDFPageProxy[]
   ) {
     const renderTasks: Promise<void>[] = [];
-
-    if (outputFolder) {
-      await fsPromises.mkdir(outputFolder, { recursive: true });
-    }
 
     for (const page of resolvedPagesPromises) {
       const viewport = page.getViewport({
@@ -117,16 +111,6 @@ export class PDFToPNGConversion {
         height,
       };
 
-      if (outputFolder) {
-        const resolvedPath = this.streamToDestination(
-          outputFolder,
-          pngPageOutput,
-          this.canvasAndContext.canvas!
-        );
-
-        pngPageOutput.path = resolvedPath;
-      }
-
       page.cleanup();
       this.pngPagesOutput.push(pngPageOutput);
     }
@@ -134,13 +118,50 @@ export class PDFToPNGConversion {
     return renderTasks;
   }
 
-  private streamToDestination(outputFolder: string, pngPageOutput: PngPageOutput, canvas: Canvas) {
+  private streamToDestination(
+    outputFolderName: string,
+    pngPageOutput: PngPageOutput,
+    canvas: Canvas,
+    waitForAllStreamsToComplete: boolean
+  ) {
     const PGNStream = canvas.createPNGStream();
-    const resolvedPath = resolve(outputFolder, pngPageOutput.name);
+    const resolvedPath = resolve(outputFolderName, pngPageOutput.name);
     const streamDestination = createWriteStream(resolvedPath);
-    PGNStream.pipe(streamDestination);
 
-    return resolvedPath;
+    if (!waitForAllStreamsToComplete) {
+      PGNStream.pipe(streamDestination);
+      return;
+    }
+
+    const pgnStream = finished(PGNStream.pipe(streamDestination));
+    return pgnStream;
+  }
+
+  private async createPNG(
+    outputFolderName: string | undefined,
+    waitForAllStreamsToComplete: boolean | undefined
+  ) {
+    const waitForAllStreams =
+      waitForAllStreamsToComplete ?? PDF_TO_PNG_OPTIONS_DEFAULTS.waitForAllStreamsToComplete;
+
+    if (!outputFolderName) return;
+    const pngStreams: Promise<void>[] = [];
+
+    for (const pngPageOutput of this.pngPagesOutput) {
+      const resolvedPath = resolve(outputFolderName, pngPageOutput.name);
+      pngPageOutput.path = resolvedPath;
+
+      const pgnStream = this.streamToDestination(
+        outputFolderName,
+        pngPageOutput,
+        this.canvasAndContext.canvas!,
+        waitForAllStreams
+      );
+
+      if (pgnStream instanceof Promise) pngStreams.push(pgnStream);
+    }
+
+    if (waitForAllStreamsToComplete) await Promise.all(pngStreams);
   }
 
   /**
@@ -160,17 +181,17 @@ export class PDFToPNGConversion {
   }
 
   /**
-   * Get total size of the PNG on disk. Only available if outputFolder is defined in the options.
+   * Get total size of the PNG on disk. Only available if outputFolderName is defined in the options.
    */
   async getTotalSizeOnDisk() {
-    const { outputFolder } = this.props;
+    const { outputFolderName } = this.props;
     const BYTES_IN_MEGA_BYTES = 1024000;
-    if (!outputFolder) return;
+    if (!outputFolderName) return;
 
     const allPNGStats: Promise<Stats>[] = [];
 
     for (const pageOutput of this.pngPagesOutput) {
-      const pgnPath = resolve(outputFolder, pageOutput.name);
+      const pgnPath = resolve(outputFolderName, pageOutput.name);
       const pgnStats = fsPromises.stat(pgnPath);
       allPNGStats.push(pgnStats);
     }
@@ -182,9 +203,16 @@ export class PDFToPNGConversion {
     }, 0);
 
     const inMB = total / BYTES_IN_MEGA_BYTES;
-    const flored = Math.floor(inMB * 100) / 100;
+    const inMBfloored = Math.floor(inMB * 100) / 100;
 
-    return `${flored} MB`;
+    return `${inMBfloored} MB`;
+  }
+
+  private async createOutputDirectory() {
+    const { outputFolderName } = this.props;
+    if (!outputFolderName) return;
+
+    await fsPromises.mkdir(outputFolderName, { recursive: true });
   }
 
   /**
@@ -193,19 +221,26 @@ export class PDFToPNGConversion {
   async convert() {
     log('============================');
     time('totalTime');
-    const { outputFileMask, outputFolder, pagesToProcess, strictPagesToProcess, viewportScale } =
-      this.props;
+    const {
+      outputFileName,
+      outputFolderName,
+      pagesToProcess,
+      viewportScale,
+      waitForAllStreamsToComplete,
+    } = this.props;
 
     await this.getPDFDocument();
-    this.setPageName(outputFileMask);
+    await this.createOutputDirectory();
+    this.setPageName(outputFileName);
 
     const pagesToResolve = this.populatePagesPromises(pagesToProcess);
     const resolvedPagesPromises = await Promise.all(pagesToResolve);
-    const renderTasks = await this.renderPages(outputFolder, viewportScale, resolvedPagesPromises);
+    const renderTasks = this.renderPages(viewportScale, resolvedPagesPromises);
 
     time('render');
     await Promise.all(renderTasks);
     timeEnd('render');
+    await this.createPNG(outputFolderName, waitForAllStreamsToComplete);
     await this.pdfDocument.cleanup();
     this.canvasFactory.destroy(this.canvasAndContext);
     timeEnd('totalTime');
@@ -237,98 +272,98 @@ export class PDFToPNGConversion {
 /**
  * ORIGINAL
  */
-export async function pdfToPng(
-  pdfFilePathOrBuffer: string | ArrayBufferLike,
-  props?: PdfToPngOptions
-): Promise<PngPageOutput[]> {
-  time('start');
-  const pdf = await import('pdfjs-dist/legacy/build/pdf.mjs');
+// export async function pdfToPng(
+//   pdfFilePathOrBuffer: string | ArrayBufferLike,
+//   props?: PdfToPngOptions
+// ): Promise<PngPageOutput[]> {
+//   time('start');
+//   const pdf = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
-  const isBuffer: boolean = Buffer.isBuffer(pdfFilePathOrBuffer);
+//   const isBuffer: boolean = Buffer.isBuffer(pdfFilePathOrBuffer);
 
-  const pdfFileBuffer: ArrayBuffer = isBuffer
-    ? (pdfFilePathOrBuffer as ArrayBuffer)
-    : await fsPromises.readFile(pdfFilePathOrBuffer as string);
+//   const pdfFileBuffer: ArrayBuffer = isBuffer
+//     ? (pdfFilePathOrBuffer as ArrayBuffer)
+//     : await fsPromises.readFile(pdfFilePathOrBuffer as string);
 
-  const pdfDocInitParams: pdfApiTypes.DocumentInitParameters = initialisePDFProperties(props);
-  pdfDocInitParams.data = new Uint8Array(pdfFileBuffer);
+//   const pdfDocInitParams: pdfApiTypes.DocumentInitParameters = initialisePDFProperties(props);
+//   pdfDocInitParams.data = new Uint8Array(pdfFileBuffer);
 
-  const canvasFactory = new NodeCanvasFactory();
-  pdfDocInitParams.canvasFactory = canvasFactory;
-  const pdfDocument: pdfApiTypes.PDFDocumentProxy = await pdf.getDocument(pdfDocInitParams).promise;
-  const targetedPageNumbers: number[] =
-    props?.pagesToProcess !== undefined
-      ? props.pagesToProcess
-      : Array.from({ length: pdfDocument.numPages }, (_, index) => index + 1);
+//   const canvasFactory = new NodeCanvasFactory();
+//   pdfDocInitParams.canvasFactory = canvasFactory;
+//   const pdfDocument: pdfApiTypes.PDFDocumentProxy = await pdf.getDocument(pdfDocInitParams).promise;
+//   const targetedPageNumbers: number[] =
+//     props?.pagesToProcess !== undefined
+//       ? props.pagesToProcess
+//       : Array.from({ length: pdfDocument.numPages }, (_, index) => index + 1);
 
-  if (props?.strictPagesToProcess && targetedPageNumbers.some((pageNum) => pageNum < 1)) {
-    throw new Error('Invalid pages requested, page number must be >= 1');
-  }
-  if (
-    props?.strictPagesToProcess &&
-    targetedPageNumbers.some((pageNum) => pageNum > pdfDocument.numPages)
-  ) {
-    throw new Error('Invalid pages requested, page number must be <= total pages');
-  }
-  if (props?.outputFolder) {
-    await fsPromises.mkdir(props.outputFolder, { recursive: true });
-  }
+//   if (props?.strictPagesToProcess && targetedPageNumbers.some((pageNum) => pageNum < 1)) {
+//     throw new Error('Invalid pages requested, page number must be >= 1');
+//   }
+//   if (
+//     props?.strictPagesToProcess &&
+//     targetedPageNumbers.some((pageNum) => pageNum > pdfDocument.numPages)
+//   ) {
+//     throw new Error('Invalid pages requested, page number must be <= total pages');
+//   }
+//   if (props?.outputFolderName) {
+//     await fsPromises.mkdir(props.outputFolderName, { recursive: true });
+//   }
 
-  let pageName;
-  if (props?.outputFileMask) {
-    pageName = props.outputFileMask;
-  }
-  if (!pageName && !isBuffer) {
-    pageName = parse(pdfFilePathOrBuffer as string).name;
-  }
-  if (!pageName) {
-    pageName = PDF_TO_PNG_OPTIONS_DEFAULTS.outputFileMask;
-  }
+//   let pageName;
+//   if (props?.outputFileName) {
+//     pageName = props.outputFileName;
+//   }
+//   if (!pageName && !isBuffer) {
+//     pageName = parse(pdfFilePathOrBuffer as string).name;
+//   }
+//   if (!pageName) {
+//     pageName = PDF_TO_PNG_OPTIONS_DEFAULTS.outputFileName;
+//   }
 
-  const pngPagesOutput: PngPageOutput[] = [];
+//   const pngPagesOutput: PngPageOutput[] = [];
 
-  for (const pageNumber of targetedPageNumbers) {
-    if (pageNumber > pdfDocument.numPages || pageNumber < 1) {
-      // If a requested page is beyond the PDF bounds we skip it.
-      // This allows the use case "generate up to the first n pages from a set of input PDFs"
-      continue;
-    }
-    const page: pdfApiTypes.PDFPageProxy = await pdfDocument.getPage(pageNumber);
-    const viewport: pdfDisplayUtilsTypes.PageViewport = page.getViewport({
-      scale:
-        props?.viewportScale !== undefined
-          ? props.viewportScale
-          : (PDF_TO_PNG_OPTIONS_DEFAULTS.viewportScale as number),
-    });
-    const canvasAndContext: CanvasContext = canvasFactory.create(viewport.width, viewport.height);
+//   for (const pageNumber of targetedPageNumbers) {
+//     if (pageNumber > pdfDocument.numPages || pageNumber < 1) {
+//       // If a requested page is beyond the PDF bounds we skip it.
+//       // This allows the use case "generate up to the first n pages from a set of input PDFs"
+//       continue;
+//     }
+//     const page: pdfApiTypes.PDFPageProxy = await pdfDocument.getPage(pageNumber);
+//     const viewport: pdfDisplayUtilsTypes.PageViewport = page.getViewport({
+//       scale:
+//         props?.viewportScale !== undefined
+//           ? props.viewportScale
+//           : (PDF_TO_PNG_OPTIONS_DEFAULTS.viewportScale as number),
+//     });
+//     const canvasAndContext: CanvasContext = canvasFactory.create(viewport.width, viewport.height);
 
-    const renderContext: pdfApiTypes.RenderParameters = {
-      canvasContext: canvasAndContext.context as CanvasRenderingContext2D,
-      viewport,
-    };
+//     const renderContext: pdfApiTypes.RenderParameters = {
+//       canvasContext: canvasAndContext.context as CanvasRenderingContext2D,
+//       viewport,
+//     };
 
-    await page.render(renderContext).promise;
+//     await page.render(renderContext).promise;
 
-    const pngPageOutput: PngPageOutput = {
-      pageNumber,
-      name: `${pageName}_page_${pageNumber}.png`,
-      content: (canvasAndContext.canvas as Canvas).toBuffer(),
-      path: '',
-      width: viewport.width,
-      height: viewport.height,
-    };
+//     const pngPageOutput: PngPageOutput = {
+//       pageNumber,
+//       name: `${pageName}_page_${pageNumber}.png`,
+//       content: (canvasAndContext.canvas as Canvas).toBuffer(),
+//       path: '',
+//       width: viewport.width,
+//       height: viewport.height,
+//     };
 
-    canvasFactory.destroy(canvasAndContext);
-    page.cleanup();
+//     canvasFactory.destroy(canvasAndContext);
+//     page.cleanup();
 
-    if (props?.outputFolder) {
-      pngPageOutput.path = resolve(props.outputFolder, pngPageOutput.name);
-      await fsPromises.writeFile(pngPageOutput.path, pngPageOutput.content);
-    }
+//     if (props?.outputFolderName) {
+//       pngPageOutput.path = resolve(props.outputFolderName, pngPageOutput.name);
+//       await fsPromises.writeFile(pngPageOutput.path, pngPageOutput.content);
+//     }
 
-    pngPagesOutput.push(pngPageOutput);
-  }
-  await pdfDocument.cleanup();
-  timeEnd('start');
-  return pngPagesOutput;
-}
+//     pngPagesOutput.push(pngPageOutput);
+//   }
+//   await pdfDocument.cleanup();
+//   timeEnd('start');
+//   return pngPagesOutput;
+// }

@@ -1,17 +1,19 @@
-export { pdfToPng } from './pdf.to.png';
+// export { pdfToPng } from './pdf.to.png';
 export type { PdfToPngOptions } from './types/pdf.to.png.options';
 export type { PngPageOutput } from './types/png.page.output';
 import express from 'express';
 import path from 'path';
-import { pdfToPng, PDFToPNGConversion } from './pdf.to.png';
+import { PDFToPNGConversion } from './pdf.to.png';
+import { PdfToPngOptions } from './types/pdf.to.png.options';
 
 const app = express();
 
 app.get('/pdf-to-png', async (req, res) => {
   const outdir = 'upload';
   const pa = path.join('test-data/large_pdf.pdf');
-  const props = {
-    outputFolder: outdir,
+  const props: PdfToPngOptions = {
+    outputFolderName: outdir,
+    enableHWA: true,
     // disableFontFace: false,
     // verbosityLevel: 5,
     // useSystemFonts: true,
