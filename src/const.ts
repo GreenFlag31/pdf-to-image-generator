@@ -5,7 +5,6 @@ export const PDF_TO_PNG_OPTIONS_DEFAULTS = {
   viewportScale: 1,
   useSystemFonts: true, // otherwise PNG can be generated with broken fonts
   // outputFileName: 'buffer',
-  strictPagesToProcess: false,
   waitForAllStreamsToComplete: true,
 };
 

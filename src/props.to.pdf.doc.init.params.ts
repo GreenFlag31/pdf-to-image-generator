@@ -1,4 +1,3 @@
-import * as pdfApiTypes from 'pdfjs-dist/types/src/display/api';
 import { BASE_PROPERTIES } from './const';
 import { PdfToPngOptions } from './types/pdf.to.png.options';
 

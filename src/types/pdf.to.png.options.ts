@@ -2,7 +2,7 @@ import { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
 
 export type PdfToPngOptions = {
   /**
-   * Controls PNG quality. 1 = Lowest, 5 = Highest. Increase quality increases the size of the PNG.
+   * Controls PNG quality. 1 = Lowest. Increase quality increases the size of the PNG and the time to render the images.
    * Default to 1.
    */
   viewportScale?: number;
@@ -20,11 +20,19 @@ export type PdfToPngOptions = {
    * An array containing the pages to render.
    * Default to undefined.
    */
-  pagesToProcess?: number[];
-  strictPagesToProcess?: boolean; // consider removing this option(?)
+  pages?: number[];
   /**
-   * Waits for all streams to be completed before returning the results. Takes then a bit more time to complete. Set it to true if you don't perform an operation on the PNG immediately after.
+   * Waits for all streams to be completed before returning the results. Takes then a bit more time to complete. Set it to false if you don't perform an operation on the PNG immediately after.
    * Default to true.
    */
   waitForAllStreamsToComplete?: boolean;
-} & DocumentInitParameters;
+} & Omit<
+  DocumentInitParameters,
+  | 'disableAutoFetch'
+  | 'disableStream'
+  | 'cMapPacked'
+  | 'cMapUrl'
+  | 'CMapReaderFactory'
+  | 'canvasFactory'
+  | 'canvasMaxAreaInBytes'
+>;
