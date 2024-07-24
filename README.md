@@ -11,7 +11,7 @@ Currently the fastest and lowest memory consumption library to convert PDF to PN
 | pdf-to-png-converter | +5%     | +20%     | +40%      |
 | pdf-to-img           | +5%     | +20%     | +40%      |
 
-_For a PDF of approx. 10 pages, this library is 20% faster than pdf-to-png-converter and 20% faster than pdf-to-img._
+_For a PDF of approx. 10 pages, this library is 20% faster than pdf-to-png-converter and 20% faster than pdf-to-img. Tested with default options._
 
 ## Getting started
 

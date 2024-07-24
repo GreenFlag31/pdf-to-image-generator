@@ -26,8 +26,6 @@
   ],
   "scripts": {
     "build": "tsc",
-    "build:test": "tsc --pretty  --project tsconfig.test.json",
-    "license-checker": "npx license-checker --production --onlyAllow 'MIT; MIT OR X11; BSD; ISC; Apache-2.0; Unlicense'",
     "pretest": "npm run clean && npm run build:test",
     "test": "mocha",
     "start:dev": "tsc-watch --onSuccess \"node dist/index.js\""
