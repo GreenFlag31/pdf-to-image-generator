@@ -4,8 +4,6 @@
   "compilerOptions": {
     "target": "ES6",
     "lib": ["ES6"],
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "types": ["node", "mocha", "chai"],
@@ -15,8 +13,6 @@
     "sourceMap": true,
     "outDir": "dist",
 
-    "isolatedModules": true,
-    "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
 

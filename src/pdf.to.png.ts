@@ -6,7 +6,6 @@ import { PdfToPngOptions, PngPageOutput } from '.';
 import { PDF_TO_PNG_OPTIONS_DEFAULTS } from './const';
 import { NodeCanvasFactory } from './node.canvas.factory';
 import { initialisePDFProperties } from './init.params';
-import { log, time, timeEnd } from 'node:console';
 import { finished } from 'node:stream/promises';
 
 /**
@@ -19,7 +18,10 @@ export class PDFToPNGConversion {
   private pngPagesOutput: PngPageOutput[] = [];
   private PNGStreams: Promise<void>[] = [];
 
-  constructor(public pdfFilePathOrBuffer: string | Buffer, public options: PdfToPngOptions = {}) {}
+  constructor(
+    public readonly pdfFilePathOrBuffer: string | Buffer,
+    public readonly options: PdfToPngOptions = {}
+  ) {}
 
   get page_name() {
     return this.pageName;
@@ -35,7 +37,7 @@ export class PDFToPNGConversion {
     }
   }
 
-  private readPDFAsStream(): Promise<Buffer> {
+  private async readPDFAsStream() {
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
       const stream = createReadStream(this.pdfFilePathOrBuffer);
@@ -193,8 +195,6 @@ export class PDFToPNGConversion {
    * Convert the PDF to PNG with the informations provided in the constructor.
    */
   async convert() {
-    log('============================');
-    time('totalTime');
     const { outputFileName, outputFolderName, pages, viewportScale, waitForAllStreamsToComplete } =
       this.options;
 
@@ -206,16 +206,13 @@ export class PDFToPNGConversion {
     const resolvedPagesPromises = await Promise.all(pagesToResolve);
     const renderTasks = this.renderPages(viewportScale, resolvedPagesPromises, outputFolderName);
 
-    time('render');
     await Promise.all(renderTasks);
-    timeEnd('render');
 
     const waitForAllStreams =
       waitForAllStreamsToComplete ?? PDF_TO_PNG_OPTIONS_DEFAULTS.waitForAllStreamsToComplete;
     if (waitForAllStreams) await Promise.all(this.PNGStreams);
     await this.pdfDocument.cleanup();
-    timeEnd('totalTime');
-    log('============================');
+
     return this.pngPagesOutput;
   }
 }

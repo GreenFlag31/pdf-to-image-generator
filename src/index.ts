@@ -4,6 +4,7 @@ import express from 'express';
 import path from 'path';
 import { PDFToPNGConversion } from './pdf.to.png';
 import { PDFToPNGOptions } from './types/pdf.to.png.options';
+import { time, timeEnd } from 'console';
 
 const app = express();
 
@@ -11,15 +12,14 @@ app.get('/pdf-to-png', async (req, res) => {
   const filePath = path.join('test-data/large_pdf.pdf');
   const options: PDFToPNGOptions = {
     outputFolderName: 'upload',
-    // disableFontFace: false,
-    // verbosityLevel: 5,
-    // useSystemFonts: true,
   };
 
   const pdfConversion = new PDFToPNGConversion(filePath, options);
-  const doc = await pdfConversion.getPDFDocument();
+  // const doc = await pdfConversion.getPDFDocument();
+  time('convert');
   const pdf = await pdfConversion.convert();
-  const stats = await pdfConversion.getTotalSizeOnDisk();
+  // const stats = await pdfConversion.getTotalSizeOnDisk();
+  timeEnd('convert');
 
   // await pdfToPng(pa, props);
   res.send('ok');

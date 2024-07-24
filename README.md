@@ -97,4 +97,4 @@ Feel free! Github: https://github.com/GreenFlag31/pdf-to-png-generator
 
 ## Discover others libraries:
 
-NPM: (https://www.npmjs.com/~greenflag31)
+NPM: https://www.npmjs.com/~greenflag31
