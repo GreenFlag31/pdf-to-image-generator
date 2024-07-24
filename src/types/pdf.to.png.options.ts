@@ -1,6 +1,6 @@
 import { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
 
-export type PdfToPngOptions = {
+export type PDFToPNGOptions = {
   /**
    * Controls PNG quality. 1 = Lowest. Increase quality increases the size of the PNG and the time to render the images.
    * Default to 1.

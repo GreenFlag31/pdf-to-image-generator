@@ -5,7 +5,7 @@ import { log } from 'console';
 async function convert() {
   const outdir = 'upload';
   const pa = path.join('test-data/large_pdf.pdf');
-  const props = {
+  const options = {
     outputFolderName: outdir,
     // disableFontFace: false,
     // verbosityLevel: 5,
@@ -13,7 +13,7 @@ async function convert() {
   };
   // const pdf = await pdfToPng(pa, props);
 
-  const pdf2 = new PDFToPNGConversion(pa, props);
+  const pdf2 = new PDFToPNGConversion(pa, options);
   await pdf2.convert();
   log('done');
 }

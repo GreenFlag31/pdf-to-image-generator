@@ -1,5 +1,5 @@
 {
-  "name": "pdf-to-png-converter",
+  "name": "pdf-to-png-generator",
   "version": "0.0.1",
   "description": "Performant Node.js library to convert PDF file/buffer pages to PNG files/buffers.",
   "keywords": [
@@ -9,19 +9,16 @@
     "pdf file to image",
     "pdf buffer to image"
   ],
-  "homepage": "https://github.com/GreenFlag31/pdf-to-png-converter#readme",
+  "homepage": "https://github.com/GreenFlag31/pdf-to-png-generator#readme",
   "bugs": {
-    "url": "https://github.com/GreenFlag31/pdf-to-png-converter/issues"
+    "url": "https://github.com/GreenFlag31/pdf-to-png-generator/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/GreenFlag31/pdf-to-png-converter.git"
+    "url": "git+https://github.com/GreenFlag31/pdf-to-png-generator.git"
   },
   "license": "MIT",
   "author": "Manu Claeys <unam31@gmail.com>",
-  "contributors": [
-    "Igor Magdich <magdich.igor@gmail.com>"
-  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -30,18 +27,9 @@
   "scripts": {
     "build": "tsc",
     "build:test": "tsc --pretty  --project tsconfig.test.json",
-    "clean": "npx rimraf ./dist ./coverage ./test-results",
-    "docker:build": "docker build --compress -t test-pdf-to-png-converter .",
-    "predocker:run": "npm run clean",
-    "docker:run": "docker run --rm -it -v $PWD/test-results:/usr/pkg/test-results test-pdf-to-png-converter",
-    "predocker:test": "tsc --project tsconfig.test.json",
-    "docker:test": "mocha",
     "license-checker": "npx license-checker --production --onlyAllow 'MIT; MIT OR X11; BSD; ISC; Apache-2.0; Unlicense'",
-    "lint": "eslint .",
-    "lint:fix": "npm run lint -- --fix",
     "pretest": "npm run clean && npm run build:test",
     "test": "mocha",
-    "test:docker": "npm run docker:build && npm run docker:run",
     "start:dev": "tsc-watch --onSuccess \"node dist/index.js\""
   },
   "dependencies": {
@@ -55,12 +43,9 @@
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.11.27",
     "@typescript-eslint/eslint-plugin": "^7.2.0",
-    "@typescript-eslint/parser": "^7.2.0",
     "chai": "^4.4.1",
     "chai-as-promised": "^7.1.1",
-    "eslint": "^8.57.0",
     "mocha": "^10.3.0",
-    "png-visual-compare": "^1.2.0",
     "ts-node": "^10.9.2",
     "tsc-watch": "^6.2.0",
     "typescript": "^5.4.2"
