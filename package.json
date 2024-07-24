@@ -25,7 +25,7 @@
     "/dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && @powershell copy './package.json' 'dist/'",
     "pretest": "npm run clean && npm run build:test",
     "test": "mocha",
     "start:dev": "tsc-watch --onSuccess \"node dist/index.js\""
