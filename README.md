@@ -6,10 +6,10 @@ Performant Node.js library to convert PDF file/buffer pages to PNG files/buffers
 
 Currently the fastest and lowest memory consumption library to convert PDF to PNG compared to similar libraries (without OS dependancies).
 
-| Libraries            | 5 pages                                   | 10 pages                              | +50 pages                                 |
-| -------------------- | ----------------------------------------- | ------------------------------------- | ----------------------------------------- |
-| pdf-to-png-converter | <span style="color:lightgreen">+5%</span> | <span style="color:green">+20%</span> | <span style="color:darkgreen">+40%</span> |
-| pdf-to-img           | <span style="color:lightgreen">+5%</span> | <span style="color:green">+20%</span> | <span style="color:darkgreen">+40%</span> |
+| Libraries            | 5 pages | 10 pages  | +50 pages     |
+| -------------------- | ------- | --------- | ------------- |
+| pdf-to-png-converter | 🟢 +5%  | 🟢🟢 +20% | 🟢🟢🟢🟢 +40% |
+| pdf-to-img           | 🟢 +5%  | 🟢🟢 +20% | 🟢🟢🟢🟢 +40% |
 
 _For a PDF of approx. 10 pages, this library is 20% faster than pdf-to-png-converter and 20% faster than pdf-to-img._
 
