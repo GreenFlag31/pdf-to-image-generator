@@ -68,6 +68,8 @@ const stats = await pdfConversion.getTotalSizeOnDisk();
 
 ## Output
 
+Returns an array of object containing following information:
+
 ```javascript
 {
   // Page index of the PNG
@@ -91,6 +93,8 @@ Attention has been given to developer experience. Properties and methods have be
 
 ## File a bug, got a new idea, or want to contribute?
 
-Feel free! Github: ...
+Feel free! Github: https://github.com/GreenFlag31/pdf-to-png-generator
 
 ## Discover others libraries:
+
+NPM: (https://www.npmjs.com/~greenflag31)
