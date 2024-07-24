@@ -1,14 +1,14 @@
 # pdf-to-png-generator
 
-Performant Node.js library to convert PDF file/buffer pages to PNG files/buffers without binary and OS dependencies (except MacOs on arm64). Attention has been put to performance and developer experience.
+Performant Node.js library to convert PDF file/buffer pages to PNG files/buffers without binary and OS dependencies (except MacOs on arm64). Designed with a focus on performance and developer experience.
 
 ## Benchmark
 
 Currently the fastest and lowest memory consumption library to convert PDF to PNG compared to similar libraries (without OS dependancies).
 
-| PDF                  | 5 pages | 10 pages | +50 pages |
+| Libraries \ PDF      | 5 pages | 10 pages | +50 pages |
 | -------------------- | ------- | -------- | --------- |
-| pdf-to-png-convertor | XXX     | XXX      | XXX       |
+| pdf-to-png-converter | XXX     | XXX      | XXX       |
 | pdf-to-img           | XXX     | XXX      | XXX       |
 
 ## Getting started
@@ -71,25 +71,28 @@ const stats = await pdfConversion.getTotalSizeOnDisk();
 Returns an array of object containing following information:
 
 ```javascript
-{
-  // Page index of the PNG
-  pageIndex: number;
-  // PNG page name under the format: {pdfFileName}_page_{pdfPageNumber}.png
-  name: string;
-  // PNG Buffer content
-  content: Buffer;
-  // Path to the rendered PNG page file
-  path: string;
-  // PNG page width
-  width: number;
-  // PNG page height
-  height: number;
-}
+[
+  {
+    // Page index of the PNG
+    pageIndex: number;
+    // PNG page name under the format: {pdfFileName}_page_{pdfPageNumber}.png
+    name: string;
+    // PNG Buffer content
+    content: Buffer;
+    // Path to the rendered PNG page file
+    path: string;
+    // PNG page width
+    width: number;
+    // PNG page height
+    height: number;
+  },
+  // ...
+]
 ```
 
 ## Developer experience
 
-Attention has been given to developer experience. Properties and methods have been documented and typed. Hit ctrl + space or hover on properties and methods to get help.
+Focus on developer experience. Properties and methods are documented and typed. Use your IDE's autocompletion or hover on properties and methods for help.
 
 ## File a bug, got a new idea, or want to contribute?
 
