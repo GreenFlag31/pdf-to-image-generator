@@ -35,7 +35,7 @@ arch -arm64 brew install pkg-config cairo pango libpng librsvg
 
 ```javascript
 // The path of your local PDF
-const filePath = path.join('pdf/my_pdf.pdf');
+const filePath = path.join('pdf/my_document.pdf');
 // The options to provide
 // The possible options are important, and include pdfjs-dist options
 // Click on the interface or hit ctrl + space for autocompletion
@@ -112,4 +112,4 @@ Feel free! Github: https://github.com/GreenFlag31/pdf-to-png-generator
 
 ## Discover others libraries:
 
-NPM: https://www.npmjs.com/~greenflag31
+All libraries are permanently supported. NPM: https://www.npmjs.com/~greenflag31

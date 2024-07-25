@@ -1,11 +1,46 @@
 import { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
 
-export type PDFToPNGOptions = {
+export enum PNGResolutionQuality {
+  Low = 72,
+  Medium = 150,
+  High = 300,
+}
+
+export interface PNGConfig {
   /**
-   * Controls PNG quality. 1 = Lowest. Increase quality increases the size of the PNG and the time to render the images.
+   * Controls quality. Higher quality takes more time and space on disk.
+   * Default to 72 Pixels Per Inch (?).
+   */
+  resolution?: number;
+}
+
+export interface JPEGConfig {
+  /**
+   * Specifies the quality, between 0 and 1. Defaults to 0.75.
+   */
+  quality?: number;
+}
+
+export type ImageType = 'png' | 'jpeg';
+
+export type PDFToIMGOptions = {
+  /**
+   * Controls scaling. For PNG, scale should be optimal between 2 and 3.
    * Default to 1.
    */
   viewportScale?: number;
+  /**
+   * Choose between PNG or JPEG.
+   */
+  type: ImageType;
+  /**
+   * Allow you to change quality of JPEG.
+   */
+  JPEG?: JPEGConfig;
+  /**
+   * Allow you to change quality of PNG.
+   */
+  PNG?: PNGConfig;
   /**
    * The name of the folder where PNG will be rendered.
    * Default to undefined.

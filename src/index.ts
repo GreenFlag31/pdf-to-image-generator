@@ -1,28 +1,31 @@
-export type { PDFToPNGOptions as PdfToPngOptions } from './types/pdf.to.png.options';
+export type { PDFToIMGOptions } from './types/pdf.to.png.options';
 export type { PngPageOutput } from './types/png.page.output';
+export type { VerbosityLevel } from './types/verbosity';
+
 import express from 'express';
 import path from 'path';
 import { PDFToPNGConversion } from './pdf.to.png';
-import { PDFToPNGOptions } from './types/pdf.to.png.options';
+import { PDFToIMGOptions } from './types/pdf.to.png.options';
 import { time, timeEnd } from 'console';
 
 const app = express();
 
 app.get('/pdf-to-png', async (req, res) => {
   const filePath = path.join('test-data/large_pdf.pdf');
-  const options: PDFToPNGOptions = {
+  const options: PDFToIMGOptions = {
     outputFolderName: 'upload',
+    type: 'jpeg',
   };
 
   const pdfConversion = new PDFToPNGConversion(filePath, options);
   // const doc = await pdfConversion.getPDFDocument();
   time('convert');
   const pdf = await pdfConversion.convert();
-  const stats = await pdfConversion.getTotalSizeOnDisk();
+  // const stats = await pdfConversion.getTotalSizeOnDisk();
   timeEnd('convert');
 
   // await pdfToPng(pa, props);
-  res.send({ stats });
+  res.send('ok');
 });
 
 app.listen(3006, () => {

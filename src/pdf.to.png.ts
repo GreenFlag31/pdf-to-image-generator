@@ -2,27 +2,36 @@ import { Canvas } from 'canvas';
 import { createReadStream, createWriteStream, promises as fsPromises, Stats } from 'node:fs';
 import { parse, resolve } from 'node:path';
 import * as pdfApiTypes from 'pdfjs-dist/types/src/display/api';
-import { PdfToPngOptions, PngPageOutput } from '.';
+import { PngPageOutput } from '.';
 import { PDF_TO_PNG_OPTIONS_DEFAULTS } from './const';
 import { NodeCanvasFactory } from './node.canvas.factory';
 import { initialisePDFProperties } from './init.params';
 import { finished } from 'node:stream/promises';
+import { ImageType, PDFToIMGOptions } from './types/pdf.to.png.options';
 
 /**
- * Instantiate the class with your options
+ * Instantiate the class with your options.
+ * ```
+ * await new PDFToPNGConversion('/my_document.pdf', {
+ *   outputFolderName: 'upload',
+ *   viewportScale: 2,
+ *   type: 'jpeg',
+ *   ...
+ * }).convert()
+ * ```
  */
 export class PDFToPNGConversion {
   private filePathOrBuffer: string | Buffer = '';
-  private config: PdfToPngOptions = {};
+  private config: PDFToIMGOptions = { type: 'png' };
   private pageName: undefined | string;
   private pdfDocument!: pdfApiTypes.PDFDocumentProxy;
-  private pdfDocInitParams: PdfToPngOptions = PDF_TO_PNG_OPTIONS_DEFAULTS;
+  private pdfDocInitParams: PDFToIMGOptions = PDF_TO_PNG_OPTIONS_DEFAULTS;
   private pngPagesOutput: PngPageOutput[] = [];
   private PNGStreams: Promise<void>[] = [];
 
   constructor(
     private readonly pdfFilePathOrBuffer: string | Buffer,
-    private readonly options: PdfToPngOptions = {}
+    private readonly options: PDFToIMGOptions = { type: 'png' }
   ) {
     this.filePathOrBuffer = pdfFilePathOrBuffer;
     this.config = options;
@@ -87,13 +96,14 @@ export class PDFToPNGConversion {
   private renderPages(
     viewportScale: number | undefined,
     resolvedPagesPromises: pdfApiTypes.PDFPageProxy[],
-    outputFolderName: string | undefined
+    outputFolderName: string | undefined,
+    type: ImageType
   ) {
     const renderTasks: Promise<void>[] = [];
 
     for (const page of resolvedPagesPromises) {
       const viewport = page.getViewport({
-        scale: viewportScale || PDF_TO_PNG_OPTIONS_DEFAULTS.viewportScale,
+        scale: viewportScale || PDF_TO_PNG_OPTIONS_DEFAULTS.viewportScale!,
       });
       const { width, height } = viewport;
       const canvasAndContext = new NodeCanvasFactory().create(width, height);
@@ -107,16 +117,17 @@ export class PDFToPNGConversion {
       renderTasks.push(renderPromise.promise);
 
       const { pageNumber } = page;
+
       const pngPageOutput: PngPageOutput = {
         pageIndex: pageNumber,
-        name: `${this.pageName}_page_${pageNumber}.png`,
+        name: `${this.pageName}_page_${pageNumber}.${type}`,
         content: canvasAndContext.canvas!.toBuffer(),
         path: '',
         width,
         height,
       };
 
-      this.streamToDestination(outputFolderName, pngPageOutput, canvasAndContext.canvas!);
+      this.streamToDestination(outputFolderName, pngPageOutput, canvasAndContext.canvas!, type);
 
       page.cleanup();
       this.pngPagesOutput.push(pngPageOutput);
@@ -128,11 +139,13 @@ export class PDFToPNGConversion {
   private streamToDestination(
     outputFolderName: string | undefined,
     pngPageOutput: PngPageOutput,
-    canvas: Canvas
+    canvas: Canvas,
+    type: ImageType
   ) {
     if (!outputFolderName) return;
+    const { PNG, JPEG } = this.options;
 
-    const PGNStream = canvas.createPNGStream();
+    const PGNStream = type === 'jpeg' ? canvas.createJPEGStream(JPEG) : canvas.createPNGStream(PNG);
     const resolvedPath = resolve(outputFolderName, pngPageOutput.name);
     const streamDestination = createWriteStream(resolvedPath);
 
@@ -203,8 +216,14 @@ export class PDFToPNGConversion {
    * @returns Promise<PngPageOutput[]>
    */
   async convert() {
-    const { outputFileName, outputFolderName, pages, viewportScale, waitForAllStreamsToComplete } =
-      this.config;
+    const {
+      outputFileName,
+      outputFolderName,
+      pages,
+      viewportScale,
+      waitForAllStreamsToComplete,
+      type,
+    } = this.config;
 
     await this.getPDFDocument();
     await this.createOutputDirectory();
@@ -212,7 +231,12 @@ export class PDFToPNGConversion {
 
     const pagesToResolve = this.populatePagesPromises(pages);
     const resolvedPagesPromises = await Promise.all(pagesToResolve);
-    const renderTasks = this.renderPages(viewportScale, resolvedPagesPromises, outputFolderName);
+    const renderTasks = this.renderPages(
+      viewportScale,
+      resolvedPagesPromises,
+      outputFolderName,
+      type
+    );
 
     await Promise.all(renderTasks);
 
