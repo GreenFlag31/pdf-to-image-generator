@@ -60,7 +60,7 @@ const pdf = await pdfConversion.convert();
 new PDFToPNGConversion(filePath, options);
 
 /**
- * Get the PDF document. Usefull if you want to know some information about the PDF before doing the conversion. The result will then be cached.
+ * Get the PDF document. Usefull if you want to know some information about the PDF before doing the conversion.
  * @returns Promise<pdfApiTypes.PDFDocumentProxy>
  */
 async getPDFDocument();
@@ -72,7 +72,7 @@ async getPDFDocument();
 async convert();
 
 /**
- * Get total size of the PNG in Mb on disk after conversion.
+ * Get the total size of the PNG in Mb on disk after conversion.
  * @returns Promise<number>
  */
 async getTotalSizeOnDisk();
@@ -80,7 +80,7 @@ async getTotalSizeOnDisk();
 
 ## Output
 
-Returns PngPageOutput[] containing following information:
+Returns `PngPageOutput[]` containing following information:
 
 ```javascript
 [
