@@ -54,23 +54,33 @@ const pdf = await pdfConversion.convert();
 ## API
 
 ```javascript
-// Instantiate the class with your options
-const pdfConversion = new PDFToPNGConversion(filePath, options);
+/**
+ * Instantiate the class with your options
+*/
+new PDFToPNGConversion(filePath, options);
 
-// Get information about the PDF to execute some logic before conversion
-const pdfDocument = await pdfConversion.getPDFDocument();
-// if pdfDocument.getPermission()...
+/**
+ * Get the PDF document. Usefull if you want to know some information about the PDF before doing the conversion. The result will then be cached.
+ * @returns Promise<pdfApiTypes.PDFDocumentProxy>
+ */
+async getPDFDocument();
 
-// Convert your PDF to PNG
-const pdf = await pdfConversion.convert();
+/**
+ * Convert the PDF to PNG with the informations provided in the constructor.
+ * @returns Promise<PngPageOutput[]>
+ */
+async convert();
 
-// Get information about the size of your PNG on disk after conversion
-const stats = await pdfConversion.getTotalSizeOnDisk();
+/**
+ * Get total size of the PNG in Mb on disk after conversion.
+ * @returns Promise<number>
+ */
+async getTotalSizeOnDisk();
 ```
 
 ## Output
 
-Returns an array of object containing following information:
+Returns PngPageOutput[] containing following information:
 
 ```javascript
 [

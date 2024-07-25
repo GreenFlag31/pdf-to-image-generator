@@ -18,11 +18,11 @@ app.get('/pdf-to-png', async (req, res) => {
   // const doc = await pdfConversion.getPDFDocument();
   time('convert');
   const pdf = await pdfConversion.convert();
-  // const stats = await pdfConversion.getTotalSizeOnDisk();
+  const stats = await pdfConversion.getTotalSizeOnDisk();
   timeEnd('convert');
 
   // await pdfToPng(pa, props);
-  res.send('ok');
+  res.send({ stats });
 });
 
 app.listen(3006, () => {

@@ -9,9 +9,11 @@ import { initialisePDFProperties } from './init.params';
 import { finished } from 'node:stream/promises';
 
 /**
- * Convert your PDF to PNG given the provided options.
+ * Instantiate the class with your options
  */
 export class PDFToPNGConversion {
+  private filePathOrBuffer: string | Buffer = '';
+  private config: PdfToPngOptions = {};
   private pageName: undefined | string;
   private pdfDocument!: pdfApiTypes.PDFDocumentProxy;
   private pdfDocInitParams: PdfToPngOptions = PDF_TO_PNG_OPTIONS_DEFAULTS;
@@ -19,28 +21,31 @@ export class PDFToPNGConversion {
   private PNGStreams: Promise<void>[] = [];
 
   constructor(
-    public readonly pdfFilePathOrBuffer: string | Buffer,
-    public readonly options: PdfToPngOptions = {}
-  ) {}
+    private readonly pdfFilePathOrBuffer: string | Buffer,
+    private readonly options: PdfToPngOptions = {}
+  ) {
+    this.filePathOrBuffer = pdfFilePathOrBuffer;
+    this.config = options;
+  }
 
   get page_name() {
     return this.pageName;
   }
 
   private setPageName(outputFileName: string | undefined) {
-    const isBuffer = Buffer.isBuffer(this.pdfFilePathOrBuffer);
+    const isBuffer = Buffer.isBuffer(this.filePathOrBuffer);
 
     if (outputFileName) {
       this.pageName = outputFileName;
     } else if (!isBuffer) {
-      this.pageName = parse(this.pdfFilePathOrBuffer as string).name;
+      this.pageName = parse(this.filePathOrBuffer as string).name;
     }
   }
 
   private async readPDFAsStream() {
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
-      const stream = createReadStream(this.pdfFilePathOrBuffer);
+      const stream = createReadStream(this.filePathOrBuffer);
 
       stream.on('data', (chunk: Buffer) => {
         chunks.push(chunk);
@@ -58,7 +63,7 @@ export class PDFToPNGConversion {
   }
 
   private initialisePDFParams(pdfFileBuffer: Buffer) {
-    const params = initialisePDFProperties(this.options);
+    const params = initialisePDFProperties(this.config);
     params.data = new Uint8Array(pdfFileBuffer);
 
     return params;
@@ -137,15 +142,16 @@ export class PDFToPNGConversion {
 
   /**
    * Get the PDF document. Usefull if you want to know some information about the PDF before doing the conversion. The result will then be cached.
+   * @returns Promise<pdfApiTypes.PDFDocumentProxy>
    */
   async getPDFDocument() {
     if (this.pdfDocument) return this.pdfDocument;
 
     const pdf = await import('pdfjs-dist/legacy/build/pdf.mjs');
-    const isBuffer = Buffer.isBuffer(this.pdfFilePathOrBuffer);
+    const isBuffer = Buffer.isBuffer(this.filePathOrBuffer);
 
     try {
-      const pdfFileBuffer = isBuffer ? this.pdfFilePathOrBuffer : await this.readPDFAsStream();
+      const pdfFileBuffer = isBuffer ? this.filePathOrBuffer : await this.readPDFAsStream();
 
       this.pdfDocInitParams = this.initialisePDFParams(pdfFileBuffer as Buffer);
       this.pdfDocument = await pdf.getDocument(this.pdfDocInitParams).promise;
@@ -157,13 +163,14 @@ export class PDFToPNGConversion {
   }
 
   /**
-   * Get total size of the PNG on disk. Only available if outputFolderName is defined in the options.
+   * Get total size of the PNG in Mb on disk after conversion.
+   * @returns Promise<number>
    */
   async getTotalSizeOnDisk() {
-    const { outputFolderName } = this.options;
+    const { outputFolderName } = this.config;
     if (!outputFolderName) return;
 
-    const BYTES_IN_MEGA_BYTES = 1024000;
+    const BYTES_IN_MEGA_BYTES = 1_024_000;
     const allPNGStats: Promise<Stats>[] = [];
 
     for (const pageOutput of this.pngPagesOutput) {
@@ -179,13 +186,13 @@ export class PDFToPNGConversion {
     }, 0);
 
     const inMB = total / BYTES_IN_MEGA_BYTES;
-    const inMBfloored = Math.floor(inMB * 100) / 100;
+    const totalSize = Math.floor(inMB * 100) / 100;
 
-    return `${inMBfloored} MB`;
+    return totalSize;
   }
 
   private async createOutputDirectory() {
-    const { outputFolderName } = this.options;
+    const { outputFolderName } = this.config;
     if (!outputFolderName) return;
 
     await fsPromises.mkdir(outputFolderName, { recursive: true });
@@ -193,10 +200,11 @@ export class PDFToPNGConversion {
 
   /**
    * Convert the PDF to PNG with the informations provided in the constructor.
+   * @returns Promise<PngPageOutput[]>
    */
   async convert() {
     const { outputFileName, outputFolderName, pages, viewportScale, waitForAllStreamsToComplete } =
-      this.options;
+      this.config;
 
     await this.getPDFDocument();
     await this.createOutputDirectory();
