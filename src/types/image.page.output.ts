@@ -1,6 +1,6 @@
-import { ImageType } from './pdf.to.png.options';
+import { ImageType } from './pdf.to.image.options';
 
-export type PngPageOutput = {
+export type ImagePageOutput = {
   pageIndex: number;
   type: ImageType;
   name: string;

@@ -1,10 +1,10 @@
 # pdf-to-png-generator
 
-Performant Node.js library to convert PDF file/buffer pages to PNG files/buffers without binary and OS dependencies (except MacOs on arm64). Designed with a focus on performance and developer experience.
+Performant Node.js library to convert PDF file/buffer pages to PNG or JPEG files/buffers without binary and OS dependencies (except MacOs on arm64). Designed with high focus on performance and developer experience.
 
 ## Benchmark
 
-Currently the fastest and lowest memory consumption library to convert PDF to PNG compared to similar libraries (without OS dependancies).
+Currently the fastest and lowest memory consumption library to convert PDF to PNG or JPEG compared to similar libraries (without OS dependancies).
 
 | Libraries            | 5 pages | 10 pages | +50 pages |
 | -------------------- | ------- | -------- | --------- |
@@ -42,12 +42,13 @@ const filePath = path.join('pdf/my_document.pdf');
 const options: PDFToPNGOptions = {
   outputFolderName: 'upload',
   waitForAllStreamsToComplete: false,
+  viewportScale: 2,
 };
 
 // Instantiate the class with your options
 const pdfConversion = new PDFToPNGConversion(filePath, options);
 
-// Convert your PDF to PNG
+// Convert your PDF to PNG or JPEG
 const pdf = await pdfConversion.convert();
 ```
 
@@ -66,13 +67,13 @@ new PDFToPNGConversion(filePath, options);
 async getPDFDocument();
 
 /**
- * Convert the PDF to PNG with the informations provided in the constructor.
+ * Convert the PDF to PNG or JPEG with the informations provided in the constructor.
  * @returns Promise<PngPageOutput[]>
  */
 async convert();
 
 /**
- * Get the total size of the PNG in Mb on disk after conversion.
+ * Get the total size of the PNG or JPEG in Mb on disk after conversion.
  * @returns Promise<number>
  */
 async getTotalSizeOnDisk();
@@ -85,17 +86,17 @@ Returns `PngPageOutput[]` containing following information:
 ```javascript
 [
   {
-    // Page index of the PNG
+    // Page index of the Image
     pageIndex: number;
-    // PNG page name under the format: {pdfFileName}_page_{pdfPageNumber}.png
+    // Image page name under the format: {pdfFileName}_page_{pdfPageIndex}.{type}
     name: string;
-    // PNG Buffer content
+    // Image Buffer content
     content: Buffer;
-    // Path to the rendered PNG page file
+    // Path to the rendered Image page file
     path: string;
-    // PNG page width
+    // Image page width
     width: number;
-    // PNG page height
+    // Image page height
     height: number;
   },
   // ...
@@ -104,7 +105,7 @@ Returns `PngPageOutput[]` containing following information:
 
 ## Developer experience
 
-Focus on developer experience. Properties and methods are documented and typed. Use your IDE's autocompletion or hover on properties and methods for help.
+Focus on developer experience. Properties and methods are exhaustively documented and typed. Use your IDE's autocompletion or hover on properties and methods for help.
 
 ## File a bug, got a new idea, or want to contribute?
 

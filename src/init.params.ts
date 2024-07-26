@@ -1,5 +1,5 @@
-import { BASE_PROPERTIES } from './const';
-import { PDFToIMGOptions } from './types/pdf.to.png.options';
+import { BASE_PROPERTIES, PDF_TO_IMAGE_OPTIONS_DEFAULTS } from './const';
+import { PDFToIMGOptions } from './types/pdf.to.image.options';
 
 /**
  * Converts the given `PdfToPngOptions` object to a `pdfApiTypes.DocumentInitParameters` object.

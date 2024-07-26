@@ -1,8 +1,8 @@
 import path from 'path';
 import { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
-import { PDFToIMGOptions } from './types/pdf.to.png.options';
+import { PDFToIMGOptions } from './types/pdf.to.image.options';
 
-export const PDF_TO_PNG_OPTIONS_DEFAULTS: PDFToIMGOptions = {
+export const PDF_TO_IMAGE_OPTIONS_DEFAULTS: PDFToIMGOptions = {
   type: 'png',
   viewportScale: 1,
   useSystemFonts: true, // otherwise PNG can be generated with broken fonts
