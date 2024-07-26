@@ -53,7 +53,7 @@ export type PDFToIMGOptions = {
    */
   pages?: number[];
   /**
-   * Waits for all streams to be completed before returning the results. Takes then a bit more time to complete. Set it to false if you don't perform an operation on the PNG immediately after.
+   * Waits for all streams to be completed before returning the results. Takes then a bit more time to complete. Set it to false if you don't perform an operation on the PNG immediately after. Please note that the property 'content' of ImagePageOutput[] will be then empty.
    * Default to true.
    */
   waitForAllStreamsToComplete?: boolean;

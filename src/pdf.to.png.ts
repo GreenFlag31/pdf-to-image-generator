@@ -4,7 +4,7 @@ import { parse, resolve } from 'node:path';
 import * as pdfApiTypes from 'pdfjs-dist/types/src/display/api';
 import { ImagePageOutput } from './types/image.page.output';
 import { PDF_TO_IMAGE_OPTIONS_DEFAULTS } from './const';
-import { NodeCanvasFactory } from './node.canvas.factory';
+import { CanvasContext, NodeCanvasFactory } from './node.canvas.factory';
 import { initialisePDFProperties } from './init.params';
 import { finished } from 'node:stream/promises';
 import { PDFToIMGOptions } from './types/pdf.to.image.options';
@@ -28,6 +28,7 @@ export class PDFToImageConversion {
   private pdfDocInitParams = PDF_TO_IMAGE_OPTIONS_DEFAULTS;
   private ImagePagesOutput: ImagePageOutput[] = [];
   private ImageStreams: Promise<void>[] = [];
+  private allCanvas: CanvasContext[] = [];
 
   constructor(
     private readonly pdfFilePathOrBuffer: string | Buffer,
@@ -120,13 +121,13 @@ export class PDFToImageConversion {
       renderTasks.push(renderPromise.promise);
 
       const { pageNumber } = page;
-
       const imagePageOutput: ImagePageOutput = {
         pageIndex: pageNumber,
         type: imageType,
         quality,
         name: `${this.pageName}_page_${pageNumber}.${type}`,
-        content: canvasAndContext.canvas!.toBuffer(),
+        // empty buffer, not rendered yet
+        content: Buffer.alloc(0),
         path: '',
         width,
         height,
@@ -136,6 +137,7 @@ export class PDFToImageConversion {
 
       page.cleanup();
       this.ImagePagesOutput.push(imagePageOutput);
+      this.allCanvas.push(canvasAndContext);
     }
 
     return renderTasks;
@@ -220,8 +222,7 @@ export class PDFToImageConversion {
    * @returns Promise<ImagePageOutput[]>
    */
   async convert() {
-    const { outputFileName, outputFolderName, pages, viewportScale, waitForAllStreamsToComplete } =
-      this.config;
+    const { outputFileName, outputFolderName, pages, viewportScale } = this.config;
 
     await this.getPDFDocument();
     await this.createOutputDirectory();
@@ -233,11 +234,29 @@ export class PDFToImageConversion {
 
     await Promise.all(renderTasks);
 
-    const waitForAllStreams =
-      waitForAllStreamsToComplete ?? PDF_TO_IMAGE_OPTIONS_DEFAULTS.waitForAllStreamsToComplete;
-    if (waitForAllStreams) await Promise.all(this.ImageStreams);
+    await this.waitForAllStreams();
     await this.pdfDocument.cleanup();
 
     return this.ImagePagesOutput;
+  }
+
+  private updateOutput() {
+    if (this.config.waitForAllStreamsToComplete === false) return;
+
+    let index = 0;
+    for (const page of this.ImagePagesOutput) {
+      const canvas = this.allCanvas[index];
+
+      page.content = canvas.canvas!.toBuffer();
+      new NodeCanvasFactory().destroy(canvas);
+      index += 1;
+    }
+  }
+
+  private async waitForAllStreams() {
+    if (this.config.waitForAllStreamsToComplete === false) return;
+
+    await Promise.all(this.ImageStreams);
+    this.updateOutput();
   }
 }
