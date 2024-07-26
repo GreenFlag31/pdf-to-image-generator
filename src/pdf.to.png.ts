@@ -25,9 +25,9 @@ export class PDFToImageConversion {
   private config: PDFToIMGOptions = { type: 'png' };
   private pageName: undefined | string;
   private pdfDocument!: pdfApiTypes.PDFDocumentProxy;
-  private pdfDocInitParams = PDF_TO_IMAGE_OPTIONS_DEFAULTS;
-  private ImagePagesOutput: ImagePageOutput[] = [];
-  private ImageStreams: Promise<void>[] = [];
+  private generalConfig: PDFToIMGOptions = {};
+  private imagePagesOutput: ImagePageOutput[] = [];
+  private imageStreams: Promise<void>[] = [];
   private allCanvas: CanvasContext[] = [];
 
   constructor(
@@ -136,7 +136,7 @@ export class PDFToImageConversion {
       this.streamToDestination(outputFolderName, imagePageOutput, canvasAndContext.canvas!);
 
       page.cleanup();
-      this.ImagePagesOutput.push(imagePageOutput);
+      this.imagePagesOutput.push(imagePageOutput);
       this.allCanvas.push(canvasAndContext);
     }
 
@@ -156,7 +156,7 @@ export class PDFToImageConversion {
     const streamDestination = createWriteStream(resolvedPath);
 
     const finish = finished(PGNStream.pipe(streamDestination));
-    this.ImageStreams.push(finish);
+    this.imageStreams.push(finish);
   }
 
   /**
@@ -172,8 +172,8 @@ export class PDFToImageConversion {
     try {
       const pdfFileBuffer = isBuffer ? this.filePathOrBuffer : await this.readPDFAsStream();
 
-      this.pdfDocInitParams = this.initialisePDFParams(pdfFileBuffer as Buffer);
-      this.pdfDocument = await pdf.getDocument(this.pdfDocInitParams).promise;
+      this.generalConfig = this.initialisePDFParams(pdfFileBuffer as Buffer);
+      this.pdfDocument = await pdf.getDocument(this.generalConfig).promise;
     } catch (error) {
       throw new Error(`\x1b[31m${error} Please check the PDF provided.`);
     }
@@ -192,7 +192,7 @@ export class PDFToImageConversion {
     const BYTES_IN_MEGA_BYTES = 1_024_000;
     const allImagesStats: Promise<Stats>[] = [];
 
-    for (const pageOutput of this.ImagePagesOutput) {
+    for (const pageOutput of this.imagePagesOutput) {
       const pgnPath = resolve(outputFolderName, pageOutput.name);
       const pgnStats = fsPromises.stat(pgnPath);
       allImagesStats.push(pgnStats);
@@ -234,29 +234,44 @@ export class PDFToImageConversion {
 
     await Promise.all(renderTasks);
 
+    this.updateOutput();
     await this.waitForAllStreams();
+    await this.writeFile();
     await this.pdfDocument.cleanup();
 
-    return this.ImagePagesOutput;
-  }
-
-  private updateOutput() {
-    if (this.config.waitForAllStreamsToComplete === false) return;
-
-    let index = 0;
-    for (const page of this.ImagePagesOutput) {
-      const canvas = this.allCanvas[index];
-
-      page.content = canvas.canvas!.toBuffer();
-      new NodeCanvasFactory().destroy(canvas);
-      index += 1;
-    }
+    return this.imagePagesOutput;
   }
 
   private async waitForAllStreams() {
-    if (this.config.waitForAllStreamsToComplete === false) return;
+    const { waitForAllStreamsToComplete, disableStreams } = this.generalConfig;
+    if (!waitForAllStreamsToComplete || disableStreams) return;
 
-    await Promise.all(this.ImageStreams);
-    this.updateOutput();
+    await Promise.all(this.imageStreams);
+  }
+
+  private async writeFile() {
+    // add workers
+    if (!this.generalConfig.disableStreams) return;
+
+    const pages: Promise<void>[] = [];
+    for (const page of this.imagePagesOutput) {
+      const { name, content } = page;
+      const file = fsPromises.writeFile(name, content);
+
+      pages.push(file);
+    }
+
+    await Promise.all(pages);
+  }
+
+  private updateOutput() {
+    let index = 0;
+    for (const page of this.imagePagesOutput) {
+      const canvas = this.allCanvas[index];
+
+      page.content = canvas.canvas!.toBuffer();
+      // new NodeCanvasFactory().destroy(canvas);
+      index += 1;
+    }
   }
 }

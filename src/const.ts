@@ -5,8 +5,9 @@ import { PDFToIMGOptions } from './types/pdf.to.image.options';
 export const PDF_TO_IMAGE_OPTIONS_DEFAULTS: PDFToIMGOptions = {
   type: 'png',
   viewportScale: 1,
-  useSystemFonts: true, // otherwise PNG can be generated with broken fonts
+  useSystemFonts: true, // otherwise images can be generated with broken fonts (fallback)
   waitForAllStreamsToComplete: true,
+  disableStreams: false,
 };
 
 export const BASE_PROPERTIES: DocumentInitParameters = {

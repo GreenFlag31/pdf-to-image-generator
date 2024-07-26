@@ -8,6 +8,7 @@ import { PDFToIMGOptions } from './types/pdf.to.image.options';
  */
 export function initialisePDFProperties(options: PDFToIMGOptions = { type: 'png' }) {
   return {
+    ...PDF_TO_IMAGE_OPTIONS_DEFAULTS,
     ...BASE_PROPERTIES,
     ...options,
   };

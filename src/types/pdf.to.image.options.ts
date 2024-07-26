@@ -53,10 +53,15 @@ export type PDFToIMGOptions = {
    */
   pages?: number[];
   /**
-   * Waits for all streams to be completed before returning the results. Takes then a bit more time to complete. Set it to false if you don't perform an operation on the PNG immediately after. Please note that the property 'content' of ImagePageOutput[] will be then empty.
+   * Waits for all streams to be completed before returning the results. Takes then a bit more time to complete. Set it to false if you don't perform an operation on the images immediately after. Please note that the property 'content' of ImagePageOutput[] will then be empty.
    * Default to true.
    */
   waitForAllStreamsToComplete?: boolean;
+  /**
+   * Disable streams. Will increase memory consumption for all type of files and time to render for large files.
+   * Default to false.
+   */
+  disableStreams?: boolean;
 } & Omit<
   DocumentInitParameters,
   | 'disableAutoFetch'

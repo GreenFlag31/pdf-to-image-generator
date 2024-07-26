@@ -36,7 +36,6 @@ arch -arm64 brew install pkg-config cairo pango libpng librsvg
 ```javascript
 // The path of your local PDF
 const filePath = path.join('pdf/my_document.pdf');
-// The options to provide
 // The possible options are important, and include pdfjs-dist options
 // Click on the interface or hit ctrl + space for autocompletion
 const options: PDFToPNGOptions = {

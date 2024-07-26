@@ -16,7 +16,7 @@ app.get('/pdf-to-png', async (req, res) => {
   const options: PDFToIMGOptions = {
     outputFolderName: 'upload',
     type: 'jpeg',
-    pages: [1, 3, 5],
+    // pages: [1, 3, 5],
   };
 
   const pdfConversion = new PDFToImageConversion(filePath, options);
@@ -26,8 +26,7 @@ app.get('/pdf-to-png', async (req, res) => {
   // const stats = await pdfConversion.getTotalSizeOnDisk();
   timeEnd('convert');
 
-  // canvasAndContext.canvas!.toBuffer()
-  // await fsPromises.writeFile('test.png', pdf[0].canvasAndContext.canvas!.toBuffer());
+  await fsPromises.writeFile('test.png', pdf[0].content);
   res.send('ok');
 });
 
