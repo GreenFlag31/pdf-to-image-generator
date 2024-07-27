@@ -52,3 +52,21 @@ Total time: 3302ms
 =======
 OPTIONS: {"outputFolderName":"upload","disableStreams":true}
 Total time: 3163ms
+=======
+OPTIONS: {"outputFolderName":"upload"}
+Total time: 4344ms
+=======
+OPTIONS: {"outputFolderName":"upload"}
+Total time: 4034ms
+=======
+OPTIONS: {"outputFolderName":"upload"}
+Total time: 4086ms
+=======
+OPTIONS: {"outputFolderName":"upload","waitForAllStreamsToComplete":false}
+Total time: 3530ms
+=======
+OPTIONS: {"outputFolderName":"upload","waitForAllStreamsToComplete":false}
+Total time: 3370ms
+=======
+OPTIONS: {"outputFolderName":"upload","waitForAllStreamsToComplete":false}
+Total time: 3245ms

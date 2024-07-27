@@ -54,7 +54,7 @@ export type PDFToIMGOptions = {
   pages?: number[];
   /**
    * Disable streams. Will increase memory consumption, but might be faster for reasonable file size.
-   * Since it might crash the application if large files - concurrent requests - high image quality, it is defaulted to false.
+   * Since it might crash or slow down the application if large files - concurrent requests - high image quality, it is defaulted to false.
    */
   disableStreams?: boolean;
   /**
