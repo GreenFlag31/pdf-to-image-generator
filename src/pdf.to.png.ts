@@ -100,11 +100,9 @@ export class PDFToImageConversion {
 
   private renderPages(resolvedPagesPromises: pdfApiTypes.PDFPageProxy[]) {
     const renderTasks: Promise<void>[] = [];
-    const { PNG, JPEG, type, outputFolderName, viewportScale } = this.generalConfig;
+    const { type, outputFolderName, viewportScale } = this.generalConfig;
     // undefined can still be assigned
     const imageType = type ?? OPTIONS_DEFAULTS.type!;
-    const quality =
-      imageType === 'png' ? `${PNG?.resolution ?? '72'} PPI` : `${JPEG?.quality ?? 0.75}/1`;
 
     for (const page of resolvedPagesPromises) {
       const viewport = page.getViewport({
@@ -128,7 +126,6 @@ export class PDFToImageConversion {
       const imagePageOutput: ImagePageOutput = {
         pageIndex: pageNumber,
         type: imageType,
-        quality,
         name,
         // empty buffer, not rendered yet
         content: Buffer.alloc(0),
@@ -257,7 +254,7 @@ export class PDFToImageConversion {
 
   private shouldWriteAsyncToAFile() {
     const { outputFolderName, disableStreams } = this.generalConfig;
-    return disableStreams || outputFolderName;
+    return disableStreams && outputFolderName;
   }
 
   private async writeFile() {
