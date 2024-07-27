@@ -7,7 +7,7 @@ import path from 'path';
 import { PDFToImageConversion } from './pdf.to.png';
 import { PDFToIMGOptions } from './types/pdf.to.image.options';
 import { time, timeEnd } from 'console';
-import { createReadStream, createWriteStream, promises as fsPromises, Stats } from 'node:fs';
+import { promises as fsPromises } from 'node:fs';
 
 const app = express();
 

@@ -34,11 +34,11 @@ export type PDFToIMGOptions = {
    */
   JPEG?: JPEGConfig;
   /**
-   * Allow you to change quality of PNG.
+   * Allow you to change the resolution of PNG.
    */
   PNG?: PNGConfig;
   /**
-   * The name of the folder where PNG will be rendered.
+   * The name of the folder where images will be rendered.
    * Default to undefined.
    */
   outputFolderName?: string;
@@ -58,7 +58,7 @@ export type PDFToIMGOptions = {
    */
   waitForAllStreamsToComplete?: boolean;
   /**
-   * Disable streams. Will increase memory consumption for all type of files and time to render for large files.
+   * Disable streams. Will increase memory consumption and possibly time to render for large files.
    * Default to false.
    */
   disableStreams?: boolean;

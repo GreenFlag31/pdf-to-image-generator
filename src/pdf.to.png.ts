@@ -3,11 +3,11 @@ import { createReadStream, createWriteStream, promises as fsPromises, Stats } fr
 import { parse, resolve } from 'node:path';
 import * as pdfApiTypes from 'pdfjs-dist/types/src/display/api';
 import { ImagePageOutput } from './types/image.page.output';
-import { PDF_TO_IMAGE_OPTIONS_DEFAULTS } from './const';
+import { OPTIONS_DEFAULTS } from './const';
 import { CanvasContext, NodeCanvasFactory } from './node.canvas.factory';
 import { initialisePDFProperties } from './init.params';
 import { finished } from 'node:stream/promises';
-import { PDFToIMGOptions } from './types/pdf.to.image.options';
+import { ImageType, PDFToIMGOptions } from './types/pdf.to.image.options';
 
 /**
  * Instantiate the class with your options.
@@ -21,8 +21,8 @@ import { PDFToIMGOptions } from './types/pdf.to.image.options';
  * ```
  */
 export class PDFToImageConversion {
-  private filePathOrBuffer: string | Buffer = '';
-  private config: PDFToIMGOptions = { type: 'png' };
+  // private pdfFilePathOrBuffer: string | Buffer = '';
+  // private options: PDFToIMGOptions = { type: 'png' };
   private pageName: undefined | string;
   private pdfDocument!: pdfApiTypes.PDFDocumentProxy;
   private generalConfig: PDFToIMGOptions = {};
@@ -34,8 +34,8 @@ export class PDFToImageConversion {
     private readonly pdfFilePathOrBuffer: string | Buffer,
     private readonly options: PDFToIMGOptions = { type: 'png' }
   ) {
-    this.filePathOrBuffer = pdfFilePathOrBuffer;
-    this.config = options;
+    this.pdfFilePathOrBuffer = pdfFilePathOrBuffer;
+    this.options = options;
   }
 
   get page_name() {
@@ -43,19 +43,24 @@ export class PDFToImageConversion {
   }
 
   private setPageName(outputFileName: string | undefined) {
-    const isBuffer = Buffer.isBuffer(this.filePathOrBuffer);
+    const isBuffer = Buffer.isBuffer(this.pdfFilePathOrBuffer);
 
     if (outputFileName) {
       this.pageName = outputFileName;
     } else if (!isBuffer) {
-      this.pageName = parse(this.filePathOrBuffer as string).name;
+      this.pageName = parse(this.pdfFilePathOrBuffer as string).name;
     }
   }
 
-  private async readPDFAsStream() {
+  private async readFile(): Promise<Buffer> {
+    if (this.options.disableStreams) {
+      const file = await fsPromises.readFile(this.pdfFilePathOrBuffer);
+      return file;
+    }
+
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
-      const stream = createReadStream(this.filePathOrBuffer);
+      const stream = createReadStream(this.pdfFilePathOrBuffer);
 
       stream.on('data', (chunk: Buffer) => {
         chunks.push(chunk);
@@ -73,7 +78,7 @@ export class PDFToImageConversion {
   }
 
   private initialisePDFParams(pdfFileBuffer: Buffer) {
-    const params = initialisePDFProperties(this.config);
+    const params = initialisePDFProperties(this.options);
     params.data = new Uint8Array(pdfFileBuffer);
 
     return params;
@@ -94,20 +99,17 @@ export class PDFToImageConversion {
     return pagesPromises;
   }
 
-  private renderPages(
-    viewportScale: number | undefined,
-    resolvedPagesPromises: pdfApiTypes.PDFPageProxy[],
-    outputFolderName: string | undefined
-  ) {
+  private renderPages(resolvedPagesPromises: pdfApiTypes.PDFPageProxy[]) {
     const renderTasks: Promise<void>[] = [];
-    const { PNG, JPEG, type } = this.options;
-    const imageType = type ?? PDF_TO_IMAGE_OPTIONS_DEFAULTS.type!;
+    const { PNG, JPEG, type, outputFolderName, viewportScale } = this.generalConfig;
+    // undefined can still be assigned
+    const imageType = type ?? OPTIONS_DEFAULTS.type!;
     const quality =
       imageType === 'png' ? `${PNG?.resolution ?? '72'} PPI` : `${JPEG?.quality ?? 0.75}/1`;
 
     for (const page of resolvedPagesPromises) {
       const viewport = page.getViewport({
-        scale: viewportScale || PDF_TO_IMAGE_OPTIONS_DEFAULTS.viewportScale!,
+        scale: viewportScale || OPTIONS_DEFAULTS.viewportScale!,
       });
       const { width, height } = viewport;
       const canvasAndContext = new NodeCanvasFactory().create(width, height);
@@ -121,19 +123,22 @@ export class PDFToImageConversion {
       renderTasks.push(renderPromise.promise);
 
       const { pageNumber } = page;
+      const name = `${this.pageName}_page_${pageNumber}.${type}`;
+      const resolvedPath = resolve(outputFolderName || '', name);
+
       const imagePageOutput: ImagePageOutput = {
         pageIndex: pageNumber,
         type: imageType,
         quality,
-        name: `${this.pageName}_page_${pageNumber}.${type}`,
+        name,
         // empty buffer, not rendered yet
         content: Buffer.alloc(0),
-        path: '',
+        path: outputFolderName ? resolvedPath : '',
         width,
         height,
       };
 
-      this.streamToDestination(outputFolderName, imagePageOutput, canvasAndContext.canvas!);
+      this.streamToDestination(imageType, resolvedPath, canvasAndContext.canvas!);
 
       page.cleanup();
       this.imagePagesOutput.push(imagePageOutput);
@@ -143,19 +148,15 @@ export class PDFToImageConversion {
     return renderTasks;
   }
 
-  private streamToDestination(
-    outputFolderName: string | undefined,
-    imagePageOutput: ImagePageOutput,
-    canvas: Canvas
-  ) {
+  private streamToDestination(imageType: ImageType, resolvedPath: string, canvas: Canvas) {
+    const { PNG, JPEG, outputFolderName } = this.generalConfig;
     if (!outputFolderName) return;
-    const { PNG, JPEG, type } = this.options;
 
-    const PGNStream = type === 'png' ? canvas.createPNGStream(PNG) : canvas.createJPEGStream(JPEG);
-    const resolvedPath = resolve(outputFolderName, imagePageOutput.name);
+    const imageStream =
+      imageType === 'png' ? canvas.createPNGStream(PNG) : canvas.createJPEGStream(JPEG);
     const streamDestination = createWriteStream(resolvedPath);
 
-    const finish = finished(PGNStream.pipe(streamDestination));
+    const finish = finished(imageStream.pipe(streamDestination));
     this.imageStreams.push(finish);
   }
 
@@ -167,10 +168,10 @@ export class PDFToImageConversion {
     if (this.pdfDocument) return this.pdfDocument;
 
     const pdf = await import('pdfjs-dist/legacy/build/pdf.mjs');
-    const isBuffer = Buffer.isBuffer(this.filePathOrBuffer);
+    const isBuffer = Buffer.isBuffer(this.pdfFilePathOrBuffer);
 
     try {
-      const pdfFileBuffer = isBuffer ? this.filePathOrBuffer : await this.readPDFAsStream();
+      const pdfFileBuffer = isBuffer ? this.pdfFilePathOrBuffer : await this.readFile();
 
       this.generalConfig = this.initialisePDFParams(pdfFileBuffer as Buffer);
       this.pdfDocument = await pdf.getDocument(this.generalConfig).promise;
@@ -186,7 +187,7 @@ export class PDFToImageConversion {
    * @returns Promise<number>
    */
   async getTotalSizeOnDisk() {
-    const { outputFolderName } = this.config;
+    const { outputFolderName } = this.options;
     if (!outputFolderName) return;
 
     const BYTES_IN_MEGA_BYTES = 1_024_000;
@@ -211,7 +212,7 @@ export class PDFToImageConversion {
   }
 
   private async createOutputDirectory() {
-    const { outputFolderName } = this.config;
+    const { outputFolderName } = this.options;
     if (!outputFolderName) return;
 
     await fsPromises.mkdir(outputFolderName, { recursive: true });
@@ -222,7 +223,7 @@ export class PDFToImageConversion {
    * @returns Promise<ImagePageOutput[]>
    */
   async convert() {
-    const { outputFileName, outputFolderName, pages, viewportScale } = this.config;
+    const { outputFileName, pages } = this.options;
 
     await this.getPDFDocument();
     await this.createOutputDirectory();
@@ -230,8 +231,7 @@ export class PDFToImageConversion {
 
     const pagesToResolve = this.populatePagesPromises(pages);
     const resolvedPagesPromises = await Promise.all(pagesToResolve);
-    const renderTasks = this.renderPages(viewportScale, resolvedPagesPromises, outputFolderName);
-
+    const renderTasks = this.renderPages(resolvedPagesPromises);
     await Promise.all(renderTasks);
 
     this.updateOutput();
@@ -250,8 +250,9 @@ export class PDFToImageConversion {
   }
 
   private async writeFile() {
-    // add workers
-    if (!this.generalConfig.disableStreams) return;
+    // add workers?
+    const { outputFolderName, disableStreams } = this.generalConfig;
+    if (!disableStreams || !outputFolderName) return;
 
     const pages: Promise<void>[] = [];
     for (const page of this.imagePagesOutput) {
