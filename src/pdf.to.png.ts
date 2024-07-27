@@ -8,6 +8,7 @@ import { CanvasContext, NodeCanvasFactory } from './node.canvas.factory';
 import { initialisePDFProperties } from './init.params';
 import { finished } from 'node:stream/promises';
 import { ImageType, PDFToIMGOptions } from './types/pdf.to.image.options';
+import { log, time, timeEnd } from 'node:console';
 
 /**
  * Instantiate the class with your options.
@@ -21,8 +22,6 @@ import { ImageType, PDFToIMGOptions } from './types/pdf.to.image.options';
  * ```
  */
 export class PDFToImageConversion {
-  // private pdfFilePathOrBuffer: string | Buffer = '';
-  // private options: PDFToIMGOptions = { type: 'png' };
   private pageName: undefined | string;
   private pdfDocument!: pdfApiTypes.PDFDocumentProxy;
   private generalConfig: PDFToIMGOptions = {};
@@ -138,7 +137,8 @@ export class PDFToImageConversion {
         height,
       };
 
-      this.streamToDestination(imageType, resolvedPath, canvasAndContext.canvas!);
+      // à déplacer?
+      this.imageStream(imageType, resolvedPath, canvasAndContext.canvas!);
 
       page.cleanup();
       this.imagePagesOutput.push(imagePageOutput);
@@ -148,9 +148,9 @@ export class PDFToImageConversion {
     return renderTasks;
   }
 
-  private streamToDestination(imageType: ImageType, resolvedPath: string, canvas: Canvas) {
-    const { PNG, JPEG, outputFolderName } = this.generalConfig;
-    if (!outputFolderName) return;
+  private imageStream(imageType: ImageType, resolvedPath: string, canvas: Canvas) {
+    if (!this.shouldStream()) return;
+    const { PNG, JPEG } = this.generalConfig;
 
     const imageStream =
       imageType === 'png' ? canvas.createPNGStream(PNG) : canvas.createJPEGStream(JPEG);
@@ -232,32 +232,42 @@ export class PDFToImageConversion {
     const pagesToResolve = this.populatePagesPromises(pages);
     const resolvedPagesPromises = await Promise.all(pagesToResolve);
     const renderTasks = this.renderPages(resolvedPagesPromises);
+    time('render');
     await Promise.all(renderTasks);
+    timeEnd('render');
 
     this.updateOutput();
-    await this.waitForAllStreams();
-    await this.writeFile();
+    if (this.shouldWaitForAllStreams()) await Promise.all(this.imageStreams);
+
+    if (this.shouldWriteAsyncToAFile()) await this.writeFile();
     await this.pdfDocument.cleanup();
 
     return this.imagePagesOutput;
   }
 
-  private async waitForAllStreams() {
-    const { waitForAllStreamsToComplete, disableStreams } = this.generalConfig;
-    if (!waitForAllStreamsToComplete || disableStreams) return;
+  private shouldStream() {
+    const { disableStreams, outputFolderName } = this.generalConfig;
+    return !disableStreams && outputFolderName;
+  }
 
-    await Promise.all(this.imageStreams);
+  private shouldWaitForAllStreams() {
+    const { waitForAllStreamsToComplete } = this.generalConfig;
+    return waitForAllStreamsToComplete && this.shouldStream();
+  }
+
+  private shouldWriteAsyncToAFile() {
+    const { outputFolderName, disableStreams } = this.generalConfig;
+    return disableStreams || outputFolderName;
   }
 
   private async writeFile() {
-    // add workers?
-    const { outputFolderName, disableStreams } = this.generalConfig;
-    if (!disableStreams || !outputFolderName) return;
-
+    const { outputFolderName } = this.generalConfig;
     const pages: Promise<void>[] = [];
+
     for (const page of this.imagePagesOutput) {
       const { name, content } = page;
-      const file = fsPromises.writeFile(name, content);
+      const resolvedPath = resolve(outputFolderName!, name);
+      const file = fsPromises.writeFile(resolvedPath, content);
 
       pages.push(file);
     }

@@ -39,9 +39,12 @@ const filePath = path.join('pdf/my_document.pdf');
 // The possible options are important, and include pdfjs-dist options
 // Click on the interface or hit ctrl + space for autocompletion
 const options: PDFToPNGOptions = {
+  // the name of the folder where files will be stored
   outputFolderName: 'upload',
-  waitForAllStreamsToComplete: false,
+  // controls scaling
   viewportScale: 2,
+  // disable streams
+  disableStreams: true,
 };
 
 // Instantiate the class with your options

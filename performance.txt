@@ -1,0 +1,27 @@
+=======
+OPTIONS: {"outputFolderName":"upload","disableStreams":true}
+Total time: 3468ms
+=======
+OPTIONS: {"outputFolderName":"upload","disableStreams":true}
+Total time: 3229ms
+=======
+OPTIONS: {"outputFolderName":"upload","disableStreams":true}
+Total time: 3132ms
+=======
+OPTIONS: {"outputFolderName":"upload"}
+Total time: 4251ms
+=======
+OPTIONS: {"outputFolderName":"upload"}
+Total time: 4009ms
+=======
+OPTIONS: {"outputFolderName":"upload"}
+Total time: 4034ms
+=======
+OPTIONS: {"outputFolderName":"upload","viewportScale":4}
+Total time: 26895ms
+=======
+OPTIONS: {"outputFolderName":"upload","viewportScale":4,"disableStreams":true}
+Total time: 15053ms
+=======
+OPTIONS: {"outputFolderName":"upload","viewportScale":4,"disableStreams":true}
+Total time: 14835ms

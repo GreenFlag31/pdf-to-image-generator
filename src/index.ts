@@ -6,8 +6,7 @@ import express from 'express';
 import path from 'path';
 import { PDFToImageConversion } from './pdf.to.png';
 import { PDFToIMGOptions } from './types/pdf.to.image.options';
-import { time, timeEnd } from 'console';
-import { promises as fsPromises } from 'node:fs';
+import { createWriteStream } from 'fs';
 
 const app = express();
 
@@ -15,19 +14,21 @@ app.get('/pdf-to-png', async (req, res) => {
   const filePath = path.join('test-data/large_pdf.pdf');
   const options: PDFToIMGOptions = {
     outputFolderName: 'upload',
-    type: 'jpeg',
-    // pages: [1, 3, 5],
+    viewportScale: 2,
+    // type: 'jpeg',
+    // pages: [1, 6],
+    disableStreams: true,
   };
 
   const pdfConversion = new PDFToImageConversion(filePath, options);
-  // const doc = await pdfConversion.getPDFDocument();
-  time('convert');
+  const start = Date.now().valueOf();
   const pdf = await pdfConversion.convert();
-  // const stats = await pdfConversion.getTotalSizeOnDisk();
-  timeEnd('convert');
+  const end = Date.now().valueOf();
+  const total = end - start;
 
-  await fsPromises.writeFile('test.png', pdf[0].content);
-  res.send('ok');
+  const stream = createWriteStream('performance.txt', { flags: 'a' });
+  stream.write(`\n=======\nOPTIONS: ${JSON.stringify(options)}\nTotal time: ${total}ms`);
+  res.send(pdf);
 });
 
 app.listen(3006, () => {
