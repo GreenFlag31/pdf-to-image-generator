@@ -1,6 +1,4 @@
-# pdf-to-png-generator
-
-Performant and lightweight Node.js library to convert PDF file/buffer pages to PNG or JPEG files/buffers without binary and OS dependencies (except MacOs on arm64). Designed with high focus on performance and developer experience.
+# Performant and lightweight Node.js library to convert PDF file/buffer pages to PNG or JPEG files/buffers without binary and OS dependencies (except MacOs on arm64). Designed with high focus on performance and developer experience.
 
 ## Getting started
 
@@ -28,7 +26,7 @@ const filePath = path.join('pdf/my_document.pdf');
 // The possible options are important, and include pdfjs-dist options
 // Click on the interface or hit ctrl + space for autocompletion
 const options: PDFToPNGOptions = {
-  // the name of the folder where files will be stored
+  // the name of the folder where files will be written
   outputFolderName: 'upload',
   // controls scaling
   viewportScale: 2,
@@ -72,7 +70,7 @@ async getTotalSizeOnDisk();
 
 ## Output
 
-Returns `PngPageOutput[]` containing following information:
+Returns `ImagePageOutput[]` containing following information:
 
 ```javascript
 [

@@ -1,0 +1,10 @@
+{
+  "entryPoints": ["src/index.ts"],
+  "out": "docs",
+  "exclude": ["**/__tests__/**", "**/*.spec.ts"],
+  "excludePrivate": true,
+  "includeVersion": true,
+  "name": "pdf-to-png-generator",
+  "theme": "default",
+  "lang": "en"
+}

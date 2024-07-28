@@ -15,6 +15,10 @@ import { finished } from 'node:stream/promises';
 import { ImageType, PDFToIMGOptions } from './types/pdf.to.image.options';
 
 /**
+ * @param {string | Buffer} pdfFilePathOrBuffer
+ * @param {PDFToIMGOptions} options
+ * @returns {PDFToImageConversion}
+ * @example
  * Instantiate the class with your options.
  * ```
  * await new PDFToImageConversion('/my_document.pdf', {
@@ -22,7 +26,7 @@ import { ImageType, PDFToIMGOptions } from './types/pdf.to.image.options';
  *   viewportScale: 2,
  *   type: 'jpeg',
  *   ...
- * }).convert()
+ * })
  * ```
  */
 export class PDFToImageConversion {
@@ -169,7 +173,7 @@ export class PDFToImageConversion {
 
   /**
    * Get the PDF document. Usefull if you want to know some information about the PDF before doing the conversion. The result will then be cached.
-   * @returns Promise<pdfApiTypes.PDFDocumentProxy>
+   * @returns {Promise<pdfApiTypes.PDFDocumentProxy>}
    */
   async getPDFDocument() {
     if (this.pdfDocument) return this.pdfDocument;
@@ -191,7 +195,7 @@ export class PDFToImageConversion {
 
   /**
    * Get total size of PNG or JPEG in Mb on disk after conversion.
-   * @returns Promise<number>
+   * @returns {Promise<number>}
    */
   async getTotalSizeOnDisk() {
     const { outputFolderName } = this.options;
@@ -227,7 +231,8 @@ export class PDFToImageConversion {
 
   /**
    * Convert the PDF to PNG or JPEG with the options provided in the constructor.
-   * @returns Promise<ImagePageOutput[]>
+   * @returns {Promise<ImagePageOutput[]>}
+   * @throws {Error} If the PDF loaded fails.
    */
   async convert() {
     const { outputFileName, pages } = this.options;
