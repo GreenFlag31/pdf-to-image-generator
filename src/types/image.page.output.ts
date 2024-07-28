@@ -1,5 +1,9 @@
 import { ImageType } from './pdf.to.image.options';
 
+export interface Text {
+  content: string;
+  language: string;
+}
 export type ImagePageOutput = {
   /**
    * The page number. Starts at 1.
@@ -20,7 +24,7 @@ export type ImagePageOutput = {
   /**
    * Text content of the image.
    */
-  textContent: string;
+  text: Text;
   /**
    * Path where the image has been rendered.
    */

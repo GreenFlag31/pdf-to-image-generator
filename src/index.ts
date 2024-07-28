@@ -14,12 +14,12 @@ import { PDFToIMGOptions } from './types/pdf.to.image.options';
 const app = express();
 
 app.get('/pdf-to-png', async (req, res) => {
-  const filePath = path.join('test-data/large_pdf.pdf');
+  const filePath = path.join('test-data/SuperRouter.pdf');
   const options: PDFToIMGOptions = {
     // outputFolderName: 'upload',
     // viewportScale: 2,
     // type: 'jpeg',
-    pages: [2],
+    pages: [1],
     disableStreams: true,
   };
 

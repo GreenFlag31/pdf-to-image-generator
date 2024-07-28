@@ -7,7 +7,7 @@ import {
   PDFDocumentProxy,
   PDFPageProxy,
 } from 'pdfjs-dist/types/src/display/api';
-import { ImagePageOutput } from './types/image.page.output';
+import { ImagePageOutput, Text } from './types/image.page.output';
 import { OPTIONS_DEFAULTS } from './const';
 import { CanvasContext, NodeCanvasFactory } from './node.canvas.factory';
 import { initialisePDFProperties } from './init.params';
@@ -130,12 +130,13 @@ export class PDFToImageConversion {
       const { pageNumber } = page;
       const name = `${this.pageName}_page_${pageNumber}.${type}`;
       const resolvedPath = resolve(outputFolderName || '', name);
+      const textData: Text = { content: '', language: '' };
 
       const imagePageOutput: ImagePageOutput = {
         pageIndex: pageNumber,
         type: imageType,
         name: outputFolderName ? name : this.pageName!,
-        textContent: '',
+        text: textData,
         // empty buffer, not rendered yet
         content: Buffer.alloc(0),
         ...(outputFolderName ? { path: outputFolderName } : {}),
@@ -194,7 +195,7 @@ export class PDFToImageConversion {
    */
   async getTotalSizeOnDisk() {
     const { outputFolderName } = this.options;
-    if (!outputFolderName) return;
+    if (!outputFolderName || this.imagePagesOutput.length === 0) return 0;
 
     const BYTES_IN_MEGA_BYTES = 1_024_000;
     const allImagesStats: Promise<Stats>[] = [];
@@ -225,7 +226,7 @@ export class PDFToImageConversion {
   }
 
   /**
-   * Convert the PDF to PNG or JPEG with the informations provided in the constructor.
+   * Convert the PDF to PNG or JPEG with the options provided in the constructor.
    * @returns Promise<ImagePageOutput[]>
    */
   async convert() {
@@ -289,7 +290,8 @@ export class PDFToImageConversion {
 
       page.content = canvas.canvas!.toBuffer();
       const textContainer = textContent[index];
-      page.textContent = this.getText(textContainer);
+      page.text.language = textContainer.lang || 'unknown';
+      page.text.content = this.getText(textContainer);
 
       index += 1;
     }
