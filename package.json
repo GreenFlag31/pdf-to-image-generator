@@ -19,10 +19,10 @@
   },
   "license": "MIT",
   "author": "Manu Claeys <unam31@gmail.com>",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "index.js",
+  "types": "index.d.ts",
   "files": [
-    "/dist"
+    "**"
   ],
   "scripts": {
     "build": "tsc && @powershell copy './package.json' 'dist/'",
@@ -33,7 +33,7 @@
   "dependencies": {
     "canvas": "^2.11.2",
     "express": "^4.19.2",
-    "pdfjs-dist": "^4.4.168"
+    "pdfjs-dist": "^4.5.136"
   },
   "devDependencies": {
     "@types/chai": "^4.3.12",

@@ -2,17 +2,6 @@
 
 Performant Node.js library to convert PDF file/buffer pages to PNG or JPEG files/buffers without binary and OS dependencies (except MacOs on arm64). Designed with high focus on performance and developer experience.
 
-## Benchmark
-
-Currently the fastest and lowest memory consumption library to convert PDF to PNG or JPEG compared to similar libraries (without OS dependancies).
-
-| Libraries            | 5 pages | 10 pages | +50 pages |
-| -------------------- | ------- | -------- | --------- |
-| pdf-to-png-converter | +5%     | +20%     | +40%      |
-| pdf-to-img           | +5%     | +20%     | +40%      |
-
-_For a PDF of approx. 10 pages, this library is 20% faster than pdf-to-png-converter and 20% faster than pdf-to-img. Tested with default options._
-
 ## Getting started
 
 ### Package installation
@@ -88,18 +77,38 @@ Returns `PngPageOutput[]` containing following information:
 ```javascript
 [
   {
-    // Page index of the Image
+    /**
+     * The page number. Starts at 1.
+     */
     pageIndex: number;
-    // Image page name under the format: {pdfFileName}_page_{pdfPageIndex}.{type}
+    /**
+     * Type of the image. PNG or JPEG.
+     */
+    type: ImageType;
+    /**
+     * The name of the image (filemask) or the name of the PDF.
+     */
     name: string;
-    // Image Buffer content
+    /**
+     * Buffer content of the image.
+     */
     content: Buffer;
-    // Path to the rendered Image page file
-    path: string;
-    // Image page width
-    width: number;
-    // Image page height
-    height: number;
+    /**
+     * Text content of the image.
+     */
+    textContent: string;
+    /**
+     * Path where the image has been rendered.
+     */
+    path?: string;
+    /**
+     * Width of the image.
+     */
+    width?: number;
+    /**
+     * Height of the image.
+     */
+    height?: number;
   },
   // ...
 ]

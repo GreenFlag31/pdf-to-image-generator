@@ -1,11 +1,36 @@
 import { ImageType } from './pdf.to.image.options';
 
 export type ImagePageOutput = {
+  /**
+   * The page number. Starts at 1.
+   */
   pageIndex: number;
+  /**
+   * Type of the image. PNG or JPEG.
+   */
   type: ImageType;
+  /**
+   * The name of the image (filemask) or the name of the PDF.
+   */
   name: string;
+  /**
+   * Buffer content of the image.
+   */
   content: Buffer;
-  path: string;
-  width: number;
-  height: number;
+  /**
+   * Text content of the image.
+   */
+  textContent: string;
+  /**
+   * Path where the image has been rendered.
+   */
+  path?: string;
+  /**
+   * Width of the image.
+   */
+  width?: number;
+  /**
+   * Height of the image.
+   */
+  height?: number;
 };

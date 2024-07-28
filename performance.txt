@@ -70,3 +70,9 @@ Total time: 3370ms
 =======
 OPTIONS: {"outputFolderName":"upload","waitForAllStreamsToComplete":false}
 Total time: 3245ms
+=======
+OPTIONS: {"outputFolderName":"upload","disableStreams":true}
+Total time: 3509ms
+=======
+OPTIONS: {"outputFolderName":"upload","verbosity":0,"disableStreams":true}
+Total time: 12052ms
