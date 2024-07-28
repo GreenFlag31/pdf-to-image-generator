@@ -33,7 +33,8 @@
   "dependencies": {
     "canvas": "^2.11.2",
     "express": "^4.19.2",
-    "pdfjs-dist": "^4.5.136"
+    "pdfjs-dist": "^4.5.136",
+    "typedoc-github-theme": "^0.1.1"
   },
   "devDependencies": {
     "@types/chai": "^4.3.12",

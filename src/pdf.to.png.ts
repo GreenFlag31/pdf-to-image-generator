@@ -17,11 +17,10 @@ import { ImageType, PDFToIMGOptions } from './types/pdf.to.image.options';
 /**
  * @param {string | Buffer} pdfFilePathOrBuffer
  * @param {PDFToIMGOptions} options
- * @returns {PDFToImageConversion}
  * @example
  * Instantiate the class with your options.
- * ```
- * await new PDFToImageConversion('/my_document.pdf', {
+ * ```javascript
+ * new PDFToImageConversion('./my_document.pdf', {
  *   outputFolderName: 'upload',
  *   viewportScale: 2,
  *   type: 'jpeg',
@@ -232,7 +231,7 @@ export class PDFToImageConversion {
   /**
    * Convert the PDF to PNG or JPEG with the options provided in the constructor.
    * @returns {Promise<ImagePageOutput[]>}
-   * @throws {Error} If the PDF loaded fails.
+   * @throws {Error} An error if the PDF loaded fails.
    */
   async convert() {
     const { outputFileName, pages } = this.options;

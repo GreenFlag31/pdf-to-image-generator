@@ -11,7 +11,7 @@ export interface Text {
   language: string;
 }
 
-export type ImagePageOutput = {
+export interface ImagePageOutput {
   /**
    * The page number. Starts at 1.
    */
@@ -44,4 +44,4 @@ export type ImagePageOutput = {
    * Height of the image.
    */
   height?: number;
-};
+}
