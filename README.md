@@ -1,4 +1,4 @@
-# pdf-to-png-generator
+# pdf-to-image-generator
 
 Performant and lightweight Node.js library to convert PDF file/buffer pages to PNG or JPEG files/buffers without binary and OS dependencies (except MacOs on arm64). Designed with high focus on performance and developer experience.
 
@@ -9,7 +9,7 @@ Performant and lightweight Node.js library to convert PDF file/buffer pages to P
 Installation:
 
 ```sh
-npm install pdf-to-png-generator
+npm install pdf-to-image-generator
 ```
 
 ### MacOs M1 prerequisites
@@ -120,7 +120,7 @@ Focus on developer experience. Properties and methods are exhaustively documente
 
 ## File a bug, got a new idea, or want to contribute?
 
-Feel free! Github: https://github.com/GreenFlag31/pdf-to-png-generator
+Feel free! Github: https://github.com/GreenFlag31/pdf-to-image-generator
 
 ## Discover others libraries
 

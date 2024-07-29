@@ -3,7 +3,7 @@
   "out": "docs",
   "exclude": ["**/__tests__/**", "**/*.spec.ts", "**/node_modules/**"],
   "includeVersion": true, // Inclure la version du package dans la documentation
-  "name": "pdf-to-png-generator", // Nom de votre librairie
+  "name": "pdf-to-image-generator", // Nom de votre librairie
   "lang": "en", // Langue de la documentation
   "excludeExternals": true, // Exclure les fichiers externes de la documentation
   "excludeInternal": true, // Exclure les membres marqués comme internes

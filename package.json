@@ -1,5 +1,5 @@
 {
-  "name": "pdf-to-png-generator",
+  "name": "pdf-to-image-generator",
   "version": "0.0.1",
   "description": "Performant Node.js library to convert PDF file/buffer pages to PNG files/buffers.",
   "keywords": [
@@ -9,13 +9,13 @@
     "pdf file to image",
     "pdf buffer to image"
   ],
-  "homepage": "https://github.com/GreenFlag31/pdf-to-png-generator#readme",
+  "homepage": "https://github.com/GreenFlag31/pdf-to-image-generator#readme",
   "bugs": {
-    "url": "https://github.com/GreenFlag31/pdf-to-png-generator/issues"
+    "url": "https://github.com/GreenFlag31/pdf-to-image-generator/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/GreenFlag31/pdf-to-png-generator.git"
+    "url": "git+https://github.com/GreenFlag31/pdf-to-image-generator.git"
   },
   "license": "MIT",
   "author": "Manu Claeys <unam31@gmail.com>",
