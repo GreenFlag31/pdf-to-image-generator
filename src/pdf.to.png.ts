@@ -143,7 +143,6 @@ export class PDFToImageConversion {
         ...(outputFolderName ? { height } : {}),
       };
 
-      // à déplacer?
       this.imageStream(imageType, resolvedPath, canvasAndContext.canvas!);
 
       page.cleanup();
@@ -167,7 +166,8 @@ export class PDFToImageConversion {
   }
 
   /**
-   * Get the PDF document. Usefull if you want to know some information about the PDF before doing the conversion. The result will then be cached.
+   * Get the PDF document. Usefull if you want to know some information about the PDF before doing the conversion.
+   * @throws An error if the PDF loaded fails.
    */
   async getPDFDocument() {
     if (this.pdfDocument) return this.pdfDocument;
@@ -188,7 +188,7 @@ export class PDFToImageConversion {
   }
 
   /**
-   * Get total size of PNG or JPEG in Mb on disk after conversion.
+   * Get total size of PNG or JPEG in Mb on disk.
    */
   async getTotalSizeOnDisk() {
     const { outputFolderName } = this.options;
@@ -224,7 +224,6 @@ export class PDFToImageConversion {
 
   /**
    * Convert the PDF to PNG or JPEG with the options provided in the constructor.
-   * @throws Error if the PDF loaded fails.
    */
   async convert() {
     const { outputFileName, pages } = this.options;
@@ -282,6 +281,7 @@ export class PDFToImageConversion {
 
   private updateOutput(textContent: TextContent[]) {
     let index = 0;
+
     for (const page of this.imagePagesOutput) {
       const canvas = this.allCanvas[index];
 

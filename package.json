@@ -33,8 +33,7 @@
   "dependencies": {
     "canvas": "^2.11.2",
     "express": "^4.19.2",
-    "pdfjs-dist": "^4.5.136",
-    "typedoc-github-theme": "^0.1.1"
+    "pdfjs-dist": "^4.5.136"
   },
   "devDependencies": {
     "@types/chai": "^4.3.12",
@@ -48,6 +47,7 @@
     "ts-node": "^10.9.2",
     "tsc-watch": "^6.2.0",
     "typedoc": "^0.26.5",
+    "typedoc-github-theme": "^0.1.1",
     "typescript": "^5.4.2"
   },
   "engines": {
