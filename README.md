@@ -20,8 +20,6 @@ MacOs M1 dependencies prerequisites installation:
 arch -arm64 brew install pkg-config cairo pango libpng librsvg
 ```
 
-/\*_ @ignore _/
-
 ## Documentation
 
 Find the complete documentation [here](https://greenflag31.github.io/pdf-to-image-generator/).
