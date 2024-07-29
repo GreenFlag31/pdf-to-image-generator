@@ -124,7 +124,7 @@ Focus on developer experience. Properties and methods are exhaustively documente
 
 ## File a bug, got a new idea, or want to contribute?
 
-Feel free! Github: https://github.com/GreenFlag31/pdf-to-image-generator
+Feel free! [Open a ticket](https://github.com/GreenFlag31/pdf-to-image-generator).
 
 ## Discover others libraries
 
