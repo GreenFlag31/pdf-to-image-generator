@@ -15,6 +15,7 @@ import express from 'express';
 import path from 'path';
 import { PDFToImageConversion } from './pdf.to.png';
 import { PDFToIMGOptions } from './types/pdf.to.image.options';
+import { VerbosityLevel } from './types/verbosity';
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.get('/pdf-to-png', async (req, res) => {
     // type: 'jpeg',
     pages: [1],
     disableStreams: true,
+    verbosity: VerbosityLevel.ERRORS,
   };
 
   const pdfConversion = new PDFToImageConversion(filePath, options);

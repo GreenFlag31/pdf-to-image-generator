@@ -10,12 +10,17 @@ export interface PNGConfig {
 
 export interface JPEGConfig {
   /**
-   * Specifies the quality, between 0 and 1. Defaults to 0.75.
+   * Specifies the quality, between 0 and 1.
    * Higher quality means bigger size and time to render the images.
+   * Defaults to 0.75.
    */
   quality?: number;
 }
 
+/**
+ * Choose between PNG or JPEG.
+ * JPEG is lighter, but does not take into account transparent backgrounds.
+ */
 export type ImageType = 'png' | 'jpeg';
 
 export type PDFToIMGOptions = {
@@ -26,7 +31,8 @@ export type PDFToIMGOptions = {
    */
   viewportScale?: number;
   /**
-   * Choose between PNG or JPEG. Default to PNG.
+   * Choose between PNG or JPEG.
+   * Default to PNG.
    */
   type?: ImageType;
   /**
@@ -43,7 +49,7 @@ export type PDFToIMGOptions = {
    */
   outputFolderName?: string;
   /**
-   * The name of the PNG file.
+   * The name of the image file.
    * Default to undefined.
    */
   outputFileName?: string;
