@@ -23,6 +23,9 @@ export interface JPEGConfig {
  */
 export type ImageType = 'png' | 'jpeg';
 
+/**
+ * The options at class initialisation.
+ */
 export type PDFToIMGOptions = {
   /**
    * Controls scaling. For PNG and JPEG, scale should be optimal between 2 and 3.

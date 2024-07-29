@@ -3,10 +3,10 @@
  * @example
  * ```ts
  * const options: PDFToIMGOptions = {
- *  outputFolderName: 'upload',
- *  verbosity: VerbosityLevel.ERRORS
-  };
- * 
+ *   outputFolderName: 'upload',
+ *   verbosity: VerbosityLevel.ERRORS
+ * };
+ *
  * new PDFToImageConversion(filePath, options)
  * ```
  */

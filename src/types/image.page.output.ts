@@ -11,6 +11,9 @@ export interface Text {
   language: string;
 }
 
+/**
+ * The `convert()` method will return an array of `ImagePageOutput`.
+ */
 export interface ImagePageOutput {
   /**
    * The page number. Starts at 1.
