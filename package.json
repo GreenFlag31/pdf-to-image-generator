@@ -1,6 +1,6 @@
 {
   "name": "pdf-to-image-generator",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Performant Node.js library to convert PDF file/buffer pages to PNG or JPEG files/buffers.",
   "keywords": [
     "pdf",
@@ -26,7 +26,7 @@
     "**"
   ],
   "scripts": {
-    "build": "tsc && @powershell copy './package.json' 'dist/'",
+    "build": "tsc && @powershell copy './package.json' 'dist/' && @powershell copy 'README.md' 'dist/' ",
     "pretest": "npm run clean && npm run build:test",
     "test": "mocha",
     "start:dev": "tsc-watch --onSuccess \"node dist/index.js\""
