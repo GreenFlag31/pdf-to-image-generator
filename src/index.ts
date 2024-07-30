@@ -15,23 +15,19 @@ import express from 'express';
 import path from 'path';
 import { PDFToImageConversion } from './pdf.to.png';
 import { PDFToIMGOptions } from './types/pdf.to.image.options';
-import { VerbosityLevel } from './types/verbosity';
 
 const app = express();
 
 app.get('/pdf-to-png', async (req, res) => {
-  const filePath = path.join('test-data/SuperRouter.pdf');
+  const filePath = path.join('test-data/Assetto-1.0.pdf');
   const options: PDFToIMGOptions = {
-    // outputFolderName: 'upload',
-    // viewportScale: 2,
-    // type: 'jpeg',
-    pages: [1],
+    outputFolderName: 'upload',
+    pages: [1, 2, 3],
     disableStreams: true,
-    verbosity: VerbosityLevel.ERRORS,
   };
-
   const pdfConversion = new PDFToImageConversion(filePath, options);
   const pdf = await pdfConversion.convert();
+
   res.send(pdf);
 });
 

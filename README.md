@@ -38,6 +38,8 @@ const options: PDFToPNGOptions = {
   viewportScale: 2,
   // disable streams
   disableStreams: true,
+  // enable hardware acceleration (pdfjs-dist option)
+  enableHWA: true,
 };
 
 // Instantiate the class with your options
