@@ -19,7 +19,7 @@ import { PDFToIMGOptions } from './types/pdf.to.image.options';
 const app = express();
 
 app.get('/pdf-to-png', async (req, res) => {
-  const filePath = path.join('test-data/Assetto-1.0.pdf');
+  const filePath = path.join('test-data/sample.pdf');
   const options: PDFToIMGOptions = {
     outputFolderName: 'upload',
     pages: [1, 2, 3],
