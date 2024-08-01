@@ -13,6 +13,7 @@ import { CanvasContext, NodeCanvasFactory } from './node.canvas.factory';
 import { initialisePDFProperties } from './init.params';
 import { finished } from 'node:stream/promises';
 import { ImageType, PDFToIMGOptions } from './types/pdf.to.image.options';
+import { log } from 'node:console';
 
 /**
  * Instantiate the class with your options.
@@ -102,6 +103,45 @@ export class PDFToImageConversion {
     return pagesPromises;
   }
 
+  /**
+   * Get the text content and the language of the document, page per page.
+   * Usefull if you want to render only some pages based on the text content.
+   */
+  async getTextContent(pages = this.options.pages) {
+    await this.getPDFDocument();
+
+    const pagesToResolve = this.populatePagesPromises(pages);
+    const resolvedPagesPromises = await Promise.all(pagesToResolve);
+
+    for (const page of resolvedPagesPromises) {
+      const text = page.getTextContent();
+      this.textContents.push(text);
+    }
+
+    const allText = await Promise.all(this.textContents);
+    const allTextResponse: Text[] = [];
+    let index = 1;
+
+    for (const text of allText) {
+      allTextResponse.push({
+        page: index,
+        text: this.getText(text),
+        language: text.lang || 'unknown',
+      });
+
+      index += 1;
+    }
+
+    return allTextResponse;
+  }
+
+  private getText(textContainer: TextContent) {
+    return textContainer.items
+      .filter((item): item is TextItem => 'str' in item)
+      .map((item) => item.str)
+      .join(' ');
+  }
+
   private renderPages(resolvedPagesPromises: PDFPageProxy[]) {
     const renderTasks: Promise<void>[] = [];
     const { type, outputFolderName, viewportScale } = this.generalConfig;
@@ -123,19 +163,14 @@ export class PDFToImageConversion {
       const renderPromise = page.render(renderContext);
       renderTasks.push(renderPromise.promise);
 
-      const text = page.getTextContent();
-      this.textContents.push(text);
-
       const { pageNumber } = page;
       const name = `${this.pageName}_page_${pageNumber}.${type}`;
       const resolvedPath = resolve(outputFolderName || '', name);
-      const textData: Text = { content: '', language: '' };
 
       const imagePageOutput: ImagePageOutput = {
         pageIndex: pageNumber,
         type: imageType,
         name: outputFolderName ? name : this.pageName!,
-        text: textData,
         // empty buffer, not rendered yet
         content: Buffer.alloc(0),
         ...(outputFolderName ? { path: outputFolderName } : {}),
@@ -166,8 +201,7 @@ export class PDFToImageConversion {
   }
 
   /**
-   * Get the PDF document. Usefull if you want to know some information about the PDF before doing the conversion.
-   * @throws An error if the PDF loaded fails.
+   * Get the PDF document. Usefull if you want to know some information about the PDF before doing the conversion. Throws an error if the PDF load fails.
    */
   async getPDFDocument() {
     if (this.pdfDocument) return this.pdfDocument;
@@ -238,9 +272,7 @@ export class PDFToImageConversion {
 
     await Promise.all(renderTasks);
 
-    const textContent = await Promise.all(this.textContents);
-
-    this.updateOutput(textContent);
+    this.updateOutput();
 
     if (this.shouldWaitForAllStreams()) await Promise.all(this.imageStreams);
     if (this.shouldWriteAsyncToAFile()) await this.writeFile();
@@ -256,7 +288,7 @@ export class PDFToImageConversion {
 
   private shouldWaitForAllStreams() {
     const { waitForAllStreamsToComplete } = this.generalConfig;
-    return waitForAllStreamsToComplete && this.shouldStream();
+    return this.shouldStream() && waitForAllStreamsToComplete;
   }
 
   private shouldWriteAsyncToAFile() {
@@ -279,25 +311,13 @@ export class PDFToImageConversion {
     await Promise.all(pages);
   }
 
-  private updateOutput(textContent: TextContent[]) {
+  private updateOutput() {
     let index = 0;
 
     for (const page of this.imagePagesOutput) {
       const canvas = this.allCanvas[index];
-
       page.content = canvas.canvas!.toBuffer();
-      const textContainer = textContent[index];
-      page.text.language = textContainer.lang || 'unknown';
-      page.text.content = this.getText(textContainer);
-
       index += 1;
     }
-  }
-
-  private getText(textContainer: TextContent) {
-    return textContainer.items
-      .filter((item): item is TextItem => 'str' in item)
-      .map((item) => item.str)
-      .join(' ');
   }
 }

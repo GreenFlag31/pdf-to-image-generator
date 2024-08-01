@@ -2,9 +2,13 @@ import { ImageType } from './pdf.to.image.options';
 
 export interface Text {
   /**
-   * The text content of your page.
+   * The page number. Starts at 1.
    */
-  content: string;
+  page: number;
+  /**
+   * The text content of the page.
+   */
+  text: string;
   /**
    * The language of the text.
    */
@@ -31,10 +35,6 @@ export interface ImagePageOutput {
    * Buffer content of the image.
    */
   content: Buffer;
-  /**
-   * Text content of the image.
-   */
-  text: Text;
   /**
    * Path where the image has been rendered.
    */

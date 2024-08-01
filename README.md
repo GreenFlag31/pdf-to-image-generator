@@ -128,6 +128,10 @@ Focus on developer experience. Properties and methods are exhaustively documente
 
 Feel free! [Open a ticket](https://github.com/GreenFlag31/pdf-to-image-generator/issues).
 
+## Changelog
+
+V0.0.3: Minor API changes. Exposing the text content in a separate method.
+
 ## Discover others libraries
 
 All libraries are permanently supported. Discover them [here](https://www.npmjs.com/~greenflag31).
