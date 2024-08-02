@@ -110,10 +110,8 @@ export class PDFToImageConversion {
   async getTextContent(pages = this.options.pages) {
     await this.getPDFDocument();
 
-    time('populate');
     const pagesToResolve = this.populatePagesPromises(pages);
     const resolvedPagesPromises = await Promise.all(pagesToResolve);
-    timeEnd('populate');
 
     for (const page of resolvedPagesPromises) {
       const text = page.getTextContent();
@@ -175,9 +173,7 @@ export class PDFToImageConversion {
         name: outputFolderName ? name : this.pageName!,
         // empty buffer, not rendered yet
         content: Buffer.alloc(0),
-        ...(outputFolderName ? { path: outputFolderName } : {}),
-        ...(outputFolderName ? { width } : {}),
-        ...(outputFolderName ? { height } : {}),
+        ...(outputFolderName ? { path: resolvedPath } : {}),
       };
 
       this.imageStream(imageType, resolvedPath, canvasAndContext.canvas!);
