@@ -31,7 +31,7 @@ Find the complete documentation [here](https://greenflag31.github.io/pdf-to-imag
 const filePath = path.join('pdf/my_document.pdf');
 // The possible options are important, and include pdfjs-dist options
 // Click on the interface or hit ctrl + space for autocompletion
-const options: PDFToPNGOptions = {
+const options: PDFToIMGOptions = {
   // the name of the folder where files will be written
   outputFolderName: 'upload',
   // controls scaling
@@ -43,7 +43,7 @@ const options: PDFToPNGOptions = {
 };
 
 // Instantiate the class with your options
-const pdfConversion = new PDFToPNGConversion(filePath, options);
+const pdfConversion = new PDFToImageConversion(filePath, options);
 
 // Convert your PDF to PNG or JPEG
 const pdf = await pdfConversion.convert();
