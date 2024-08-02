@@ -49,65 +49,6 @@ const pdfConversion = new PDFToPNGConversion(filePath, options);
 const pdf = await pdfConversion.convert();
 ```
 
-## API
-
-```javascript
-/**
- * Instantiate the class with your options
-*/
-new PDFToPNGConversion(filePath, options);
-
-/**
- * Get the PDF document. Usefull if you want to know some information about the PDF before doing the conversion.
- * @returns Promise<pdfApiTypes.PDFDocumentProxy>
- */
-async getPDFDocument();
-
-/**
- * Convert the PDF to PNG or JPEG with the informations provided in the constructor.
- * @returns Promise<PngPageOutput[]>
- */
-async convert();
-
-/**
- * Get the total size of the PNG or JPEG in Mb on disk after conversion.
- * @returns Promise<number>
- */
-async getTotalSizeOnDisk();
-```
-
-## Output
-
-Returns `ImagePageOutput[]` containing following information:
-
-```javascript
-[
-  {
-    /**
-     * The page number. Starts at 1.
-     */
-    pageIndex: number;
-    /**
-     * Type of the image. PNG or JPEG.
-     */
-    type: ImageType;
-    /**
-     * The name of the image (filemask) or the name of the PDF.
-     */
-    name: string;
-    /**
-     * Buffer content of the image.
-     */
-    content: Buffer;
-    /**
-     * Path where the image has been rendered.
-     */
-    path?: string;
-  },
-  // ...
-]
-```
-
 ## Developer experience
 
 Focus on developer experience. Properties and methods are exhaustively documented and typed. Use your IDE's autocompletion or hover on properties and methods for help.

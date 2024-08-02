@@ -13,7 +13,6 @@ import { CanvasContext, NodeCanvasFactory } from './node.canvas.factory';
 import { initialisePDFProperties } from './init.params';
 import { finished } from 'node:stream/promises';
 import { ImageType, PDFToIMGOptions } from './types/pdf.to.image.options';
-import { log, time, timeEnd } from 'node:console';
 
 /**
  * Instantiate the class with your options.
