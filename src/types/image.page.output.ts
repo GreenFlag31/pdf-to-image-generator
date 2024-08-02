@@ -39,12 +39,4 @@ export interface ImagePageOutput {
    * Path where the image has been rendered.
    */
   path?: string;
-  /**
-   * Width of the image.
-   */
-  width?: number;
-  /**
-   * Height of the image.
-   */
-  height?: number;
 }

@@ -13,7 +13,6 @@ import { CanvasContext, NodeCanvasFactory } from './node.canvas.factory';
 import { initialisePDFProperties } from './init.params';
 import { finished } from 'node:stream/promises';
 import { ImageType, PDFToIMGOptions } from './types/pdf.to.image.options';
-import { log } from 'node:console';
 
 /**
  * Instantiate the class with your options.
@@ -173,9 +172,7 @@ export class PDFToImageConversion {
         name: outputFolderName ? name : this.pageName!,
         // empty buffer, not rendered yet
         content: Buffer.alloc(0),
-        ...(outputFolderName ? { path: outputFolderName } : {}),
-        ...(outputFolderName ? { width } : {}),
-        ...(outputFolderName ? { height } : {}),
+        ...(outputFolderName ? { path: resolvedPath } : {}),
       };
 
       this.imageStream(imageType, resolvedPath, canvasAndContext.canvas!);
@@ -271,7 +268,6 @@ export class PDFToImageConversion {
     const renderTasks = this.renderPages(resolvedPagesPromises);
 
     await Promise.all(renderTasks);
-
     this.updateOutput();
 
     if (this.shouldWaitForAllStreams()) await Promise.all(this.imageStreams);

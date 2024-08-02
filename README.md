@@ -59,7 +59,7 @@ Feel free! [Open a ticket](https://github.com/GreenFlag31/pdf-to-image-generator
 
 ## Changelog
 
-V0.0.3: Minor API changes. Exposing the text content in a separate method.
+V0.0.3: Minor API changes. Exposing the text content in a separate method. Width and height have been removed from the returned object of conversion.
 
 ## Discover others libraries
 
