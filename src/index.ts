@@ -22,7 +22,7 @@ app.get('/pdf-to-png', async (req, res) => {
   const filePath = path.join('test-data/oiseau-pdf-43pages.pdf');
   const options: PDFToIMGOptions = {
     outputFolderName: 'upload',
-    pages: [1],
+    // pages: [1],
     disableStreams: true,
   };
   const pdfConversion = new PDFToImageConversion(filePath, options);
