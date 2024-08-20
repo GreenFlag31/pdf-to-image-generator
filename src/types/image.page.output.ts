@@ -2,6 +2,10 @@ import { ImageType } from './pdf.to.image.options';
 
 export interface Text {
   /**
+   * The name of the PDF file
+   */
+  name: string;
+  /**
    * The page number. Starts at 1.
    */
   page: number;

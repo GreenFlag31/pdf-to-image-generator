@@ -5,6 +5,8 @@ test-results
 
 upload
 
+test
+
 # Logs
 logs
 *.log
