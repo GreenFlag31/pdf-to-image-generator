@@ -57,7 +57,7 @@ export type PDFToIMGOptions = {
    */
   outputFileName?: string;
   /**
-   * An array containing the pages to render. Any index not contained in the pdf file will be skipped.
+   * An array containing the pages to render. Any index not contained in the pdf file will be skipped. The first page is 1.
    * @defaultValue undefined
    */
   pages?: number[];

@@ -61,6 +61,8 @@ Feel free! [Open a ticket](https://github.com/GreenFlag31/pdf-to-image-generator
 
 V0.0.3: Minor API changes. Exposing the text content in a separate method. Width and height have been removed from the returned object of conversion.
 
+V0.0.5: Exposing the name of the file in the getTextContent method.
+
 ## Discover others libraries
 
 All libraries are permanently supported. Discover them [here](https://www.npmjs.com/~greenflag31).

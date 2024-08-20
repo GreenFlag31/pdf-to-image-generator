@@ -118,13 +118,18 @@ export class PDFToImageConversion {
     }
 
     const allText = await Promise.all(this.textContents);
+
     const allTextResponse: Text[] = [];
     let index = 1;
-    const { name, base } = parse(this.pdfFilePathOrBuffer as string);
+    const isBuffer = Buffer.isBuffer(this.pdfFilePathOrBuffer);
+    let base = '';
+    if (!isBuffer) {
+      ({ base } = parse(this.pdfFilePathOrBuffer));
+    }
 
     for (const text of allText) {
       allTextResponse.push({
-        name: base,
+        ...(!isBuffer ? { name: base } : {}),
         page: index,
         text: this.getText(text),
         language: text.lang || 'unknown',
