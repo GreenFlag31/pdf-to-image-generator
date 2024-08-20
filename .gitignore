@@ -5,7 +5,7 @@ test-results
 
 upload
 
-src/test
+test.ts
 
 # Logs
 logs
