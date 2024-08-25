@@ -39,11 +39,8 @@ export class PDFToImageConversion {
 
   constructor(
     private readonly pdfFilePathOrBuffer: string | Buffer,
-    private readonly options: PDFToIMGOptions = { type: 'png' }
-  ) {
-    this.pdfFilePathOrBuffer = pdfFilePathOrBuffer;
-    this.options = options;
-  }
+    private readonly options: PDFToIMGOptions
+  ) {}
 
   private setPageName(outputFileName: string | undefined) {
     const isBuffer = Buffer.isBuffer(this.pdfFilePathOrBuffer);
@@ -87,7 +84,7 @@ export class PDFToImageConversion {
     return params;
   }
 
-  private populatePagesPromises(pages: number[] | undefined) {
+  private populatePagesPromises(pages?: number[]) {
     const pagesPromises: Promise<PDFPageProxy>[] = [];
     const maxPages = this.pdfDocument.numPages;
     const allPages = pages || [...Array(maxPages).keys()].map((x) => ++x);
@@ -107,7 +104,7 @@ export class PDFToImageConversion {
    * Usefull if you want to render only some pages based on the text content.
    */
   async getTextContent(pages = this.options.pages) {
-    await this.getPDFDocument();
+    await this.load();
 
     const pagesToResolve = this.populatePagesPromises(pages);
     const resolvedPagesPromises = await Promise.all(pagesToResolve);
@@ -207,7 +204,7 @@ export class PDFToImageConversion {
   /**
    * Get the PDF document. Usefull if you want to know some information about the PDF before doing the conversion. Throws an error if the PDF load fails.
    */
-  async getPDFDocument() {
+  async load() {
     if (this.pdfDocument) return this.pdfDocument;
 
     const pdf = await import('pdfjs-dist/legacy/build/pdf.mjs');
@@ -218,11 +215,11 @@ export class PDFToImageConversion {
 
       this.generalConfig = this.initialisePDFParams(pdfFileBuffer as Buffer);
       this.pdfDocument = await pdf.getDocument(this.generalConfig).promise;
-    } catch (error) {
-      throw new Error(`\x1b[31m${error}`);
-    }
 
-    return this.pdfDocument;
+      return this.pdfDocument;
+    } catch (error: any) {
+      throw new Error(error);
+    }
   }
 
   /**
@@ -266,7 +263,7 @@ export class PDFToImageConversion {
   async convert() {
     const { outputFileName, pages } = this.options;
 
-    await this.getPDFDocument();
+    await this.load();
     await this.createOutputDirectory();
     this.setPageName(outputFileName);
 
