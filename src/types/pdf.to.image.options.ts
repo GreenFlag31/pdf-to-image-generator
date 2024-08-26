@@ -11,7 +11,7 @@ export interface PNGConfig {
 export interface JPEGConfig {
   /**
    * Specifies the quality, between 0 and 1.
-   * Higher quality means bigger size and time to render the images.
+   * Higher quality means bigger image size and time to render the images.
    * @defaultValue 0.75
    */
   quality?: number;
@@ -24,7 +24,7 @@ export interface JPEGConfig {
 export type ImageType = 'png' | 'jpeg';
 
 /**
- * The options at class initialisation.
+ * The options of images rendering.
  */
 export type PDFToIMGOptions = {
   /**
@@ -72,13 +72,9 @@ export type PDFToIMGOptions = {
    * @defaultValue true
    */
   waitForAllStreamsToComplete?: boolean;
-} & Omit<
+};
+
+export type pdfOptions = Omit<
   DocumentInitParameters,
-  | 'disableAutoFetch'
-  | 'disableStream'
-  | 'cMapPacked'
-  | 'cMapUrl'
-  | 'CMapReaderFactory'
-  | 'canvasFactory'
-  | 'canvasMaxAreaInBytes'
+  'cMapPacked' | 'cMapUrl' | 'CMapReaderFactory' | 'canvasFactory' | 'canvasMaxAreaInBytes' | 'data'
 >;
