@@ -1,6 +1,6 @@
 import { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
 import { BASE_PROPERTIES, OPTIONS_DEFAULTS } from './const';
-import { pdfOptions, PDFToIMGOptions } from './types/pdf.to.image.options';
+import { PDFOptions, PDFToIMGOptions } from './types/pdf.to.image.options';
 
 export function initConversionOptions(options: PDFToIMGOptions): PDFToIMGOptions {
   return Object.freeze({
@@ -9,7 +9,7 @@ export function initConversionOptions(options: PDFToIMGOptions): PDFToIMGOptions
   });
 }
 
-export function initPDFOptions(fileBuffer: Buffer, options?: pdfOptions): DocumentInitParameters {
+export function initPDFOptions(fileBuffer: Buffer, options?: PDFOptions): DocumentInitParameters {
   return Object.freeze({
     ...BASE_PROPERTIES,
     ...options,

@@ -74,7 +74,7 @@ export type PDFToIMGOptions = {
   waitForAllStreamsToComplete?: boolean;
 };
 
-export type pdfOptions = Omit<
+export type PDFOptions = Omit<
   DocumentInitParameters,
   'cMapPacked' | 'cMapUrl' | 'CMapReaderFactory' | 'canvasFactory' | 'canvasMaxAreaInBytes' | 'data'
 >;
