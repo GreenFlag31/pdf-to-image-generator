@@ -74,6 +74,9 @@ export type PDFToIMGOptions = {
   waitForAllStreamsToComplete?: boolean;
 };
 
+/**
+ * The initialisation option of the pdf. Comes from third party library pdfjs-dist.
+ */
 export type PDFOptions = Omit<
   DocumentInitParameters,
   'cMapPacked' | 'cMapUrl' | 'CMapReaderFactory' | 'canvasFactory' | 'canvasMaxAreaInBytes' | 'data'

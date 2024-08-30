@@ -28,25 +28,22 @@ Find the complete documentation [here](https://greenflag31.github.io/pdf-to-imag
 
 ```javascript
 // The path of your local PDF
-const p = path.join(__dirname, '../my_document.pdf');
-// The possible options are important, and include pdfjs-dist options
-// Click on the interface or hit ctrl + space for autocompletion
+const filePath = path.join(__dirname, '../my_document.pdf');
+// Conversion options
 const options: PDFToIMGOptions = {
-  // the name of the folder where files will be written
+  // the name of the folder where files will be rendered
   outputFolderName: 'upload',
   // controls scaling
   viewportScale: 2,
   // disable streams
   disableStreams: true,
-  // enable hardware acceleration (pdfjs-dist option)
-  enableHWA: true,
 };
 
-// Instantiate the class with your options
-const pdfConversion = new PDFToImageConversion(filePath, options);
+// Load the pdf file
+const pdf = await new PDFToImage().load(filePath);
 
 // Convert your PDF to PNG or JPEG
-const pdf = await pdfConversion.convert();
+const pdf = await pdfConversion.convert(options);
 ```
 
 ## Developer experience
@@ -63,7 +60,7 @@ V0.0.3: Minor API changes. Exposing the text content in a separate method. Width
 
 V0.0.5: Exposing the name of the file in the getTextContent method.
 
-V0.0.6: API changes, giving more flexibility and offering a cleaner way of options initialisation. Adding pausing, resume and stop methods to give more control over the conversion flow to the user.
+V0.0.6: API changes, giving more flexibility and offering a cleaner way of options initialisation. Adding pausing, resume and stop methods to give more control over the conversion flow.
 
 ## Discover others libraries
 

@@ -9,13 +9,12 @@ import {
 } from 'pdfjs-dist/types/src/display/api';
 import { ImagePageOutput, Text } from './types/image.page.output';
 import { OPTIONS_DEFAULTS } from './const';
-import { CanvasContext, NodeCanvasFactory } from './node.canvas.factory';
+import { NodeCanvasFactory } from './node.canvas.factory';
 import { initPDFOptions, initConversionOptions } from './init.params';
 import { finished } from 'node:stream/promises';
 import { ImageType, PDFOptions, PDFToIMGOptions } from './types/pdf.to.image.options';
-import { log, time, timeEnd } from 'node:console';
+import { log } from 'node:console';
 import { Conversions, Streams } from './types/all.conversions';
-import { off } from 'node:process';
 
 export class PDFToImage {
   private pdfDocument!: PDFDocumentProxy;
@@ -85,8 +84,7 @@ export class PDFToImage {
   /**
    * Get the text content and the language of the document, page per page.
    * Usefull if you want to render only some pages based on the text content.
-   * @param {number[] | undefined} pages The pages to get the content from
-   * @returns {@link Text[]} interface
+   * @param {number[] | undefined} pages The pages to get the content from. The whole document is taken into account if pages is undefined.
    */
   async getTextContent(pages?: number[]) {
     if (!this.pdfDocument) throw new Error('No document has been loaded.');
@@ -101,13 +99,12 @@ export class PDFToImage {
 
     const allText = await Promise.all(this.textContents);
 
-    const allTextResponse: Text[] = [];
-    let index = 1;
-
     const isBuffer = Buffer.isBuffer(this.file);
     let base = '';
     if (!isBuffer) ({ base } = parse(this.file as string));
 
+    const allTextResponse: Text[] = [];
+    let index = 1;
     for (const text of allText) {
       allTextResponse.push({
         ...(!isBuffer ? { name: base } : {}),
@@ -148,11 +145,12 @@ export class PDFToImage {
    * Resume all conversions processes after beeing paused.
    */
   async resume() {
-    if (!this.isPaused || this.isStopped) return;
+    if (!this.isPaused || this.isStopped) return [];
 
     let conversionIndex = 0;
     for (const conversion of this.allConversions) {
       const { outputFolderName, disableStreams, pages, remainingIndexes } = conversion;
+      await this.createOutputDirectory(outputFolderName);
 
       remainingIndexes.start = conversion.currentPage;
       await this.renderPagesSequentially(conversion);
@@ -166,8 +164,6 @@ export class PDFToImage {
       const remainingToStream = this.imageStreams.slice(start, end);
       const remainingToWrite = this.imagePagesOutput.slice(start, end);
 
-      await this.createOutputDirectory(outputFolderName);
-
       if (this.shouldWaitForAllStreams(conversion)) {
         await Promise.all(remainingToStream);
       }
@@ -178,17 +174,18 @@ export class PDFToImage {
       conversionIndex += 1;
     }
 
-    for (let i = this.allConversions.length - 1; i > 0; i--) {
+    // one index higher because +1 at end of renderPages
+    if (conversionIndex === this.allConversions.length) {
+      this.allConversions = [];
+    }
+
+    for (let i = this.allConversions.length - 1; i >= 0; i--) {
       const { remainingIndexes, pdfPages } = this.allConversions[i];
 
       // one index higher because +1 at end of renderPages
       if (remainingIndexes.end === pdfPages.length) {
         this.allConversions.splice(i, 1);
       }
-    }
-
-    if (conversionIndex === this.allConversions.length) {
-      this.allConversions = [];
     }
 
     return this.imagePagesOutput;
@@ -237,7 +234,7 @@ export class PDFToImage {
       const imagePageOutput: ImagePageOutput = {
         pageIndex: pageNumber + firstPageIndex - 1,
         type: imageType,
-        name: outputFolderName ? mask : pageName!,
+        name: outputFolderName ? mask : pageName,
         content: canvasAndContext.canvas!.toBuffer(),
         ...(outputFolderName ? { path: resolvedPathWithMask } : {}),
       };
@@ -411,7 +408,7 @@ export class PDFToImage {
     this.allConversions.push(conversion);
 
     // A pause or stop has been triggered
-    if (this.isPaused || this.isStopped) return;
+    if (this.isPaused || this.isStopped) return [];
 
     await this.createOutputDirectory(outputFolderName);
     const images = await this.renderPagesSequentially(conversion);
@@ -423,7 +420,6 @@ export class PDFToImage {
     if (this.shouldWriteAsyncToAFile(outputFolderName, disableStreams)) {
       await this.writeFile(outputFolderName!);
     }
-    // await this.pdfDocument.cleanup(); => vérifier!
 
     // one index higher because +1 at end of renderPages
     if (conversion.currentPage === pdfPages.length) {
