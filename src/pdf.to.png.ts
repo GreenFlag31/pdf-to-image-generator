@@ -13,20 +13,23 @@ import { NodeCanvasFactory } from './node.canvas.factory';
 import { initPDFOptions, initConversionOptions } from './init.params';
 import { finished } from 'node:stream/promises';
 import { ImageType, PDFOptions, PDFToIMGOptions } from './types/pdf.to.image.options';
-import { log } from 'node:console';
 import { Conversions, Streams } from './types/all.conversions';
+import EventEmitter from 'node:events';
+import { Events } from './types/progress';
 
-export class PDFToImage {
+export class PDFToImage extends EventEmitter {
   private pdfDocument!: PDFDocumentProxy;
   private imagePagesOutput: ImagePageOutput[] = [];
-  private imageStreams: Promise<void>[] = [];
+  // private imageStreams: Promise<void>[] = [];
   private textContents: Promise<TextContent>[] = [];
   private file: string | Buffer = '';
   private isPaused = false;
   private isStopped = false;
   private allConversions: Conversions[] = [];
 
-  constructor() {}
+  constructor() {
+    super();
+  }
 
   private setPageName(outputFileName?: string) {
     const isBuffer = Buffer.isBuffer(this.file);
@@ -83,7 +86,7 @@ export class PDFToImage {
 
   /**
    * Get the text content and the language of the document, page per page.
-   * Usefull if you want to render only some pages based on the text content.
+   * Usefull if you want to render only some pages based on the text content (conversion can be CPU intensive).
    * @param {number[] | undefined} pages The pages to get the content from. The whole document is taken into account if pages is undefined.
    */
   async getTextContent(pages?: number[]) {
@@ -127,7 +130,7 @@ export class PDFToImage {
   }
 
   /**
-   * Cancel all conversions processes.
+   * Stop and remove all conversions processes.
    */
   stop() {
     this.isStopped = true;
@@ -142,48 +145,33 @@ export class PDFToImage {
   }
 
   /**
-   * Resume all conversions processes after beeing paused.
+   * Resume all conversions processes after beeing paused. Returns all the converted images.
    */
   async resume() {
     if (!this.isPaused || this.isStopped) return [];
 
-    let conversionIndex = 0;
     for (const conversion of this.allConversions) {
-      const { outputFolderName, disableStreams, pages, remainingIndexes } = conversion;
+      const { outputFolderName, disableStreams, remainingIndexes } = conversion;
       await this.createOutputDirectory(outputFolderName);
 
-      remainingIndexes.start = conversion.currentPage;
-      await this.renderPagesSequentially(conversion);
-      remainingIndexes.end = conversion.currentPage;
-
-      const firstPageIndex = pages?.[0] || 1;
-      const offset = firstPageIndex - 1;
-      const start = remainingIndexes.start + offset;
-      const end = remainingIndexes.end + offset;
-
-      const remainingToStream = this.imageStreams.slice(start, end);
-      const remainingToWrite = this.imagePagesOutput.slice(start, end);
+      remainingIndexes.start = conversion.index;
+      const [images, streams] = await this.renderPagesSequentially(conversion);
+      remainingIndexes.end = conversion.index;
 
       if (this.shouldWaitForAllStreams(conversion)) {
-        await Promise.all(remainingToStream);
+        await Promise.all(streams);
       }
       if (this.shouldWriteAsyncToAFile(outputFolderName, disableStreams)) {
-        await this.writeFile(outputFolderName!, remainingToWrite);
+        await this.writeFile(outputFolderName!, images);
       }
-
-      conversionIndex += 1;
-    }
-
-    // one index higher because +1 at end of renderPages
-    if (conversionIndex === this.allConversions.length) {
-      this.allConversions = [];
     }
 
     for (let i = this.allConversions.length - 1; i >= 0; i--) {
-      const { remainingIndexes, pdfPages } = this.allConversions[i];
+      const { remainingIndexes, pdfPages, pages } = this.allConversions[i];
 
       // one index higher because +1 at end of renderPages
       if (remainingIndexes.end === pdfPages.length) {
+        this.emit('end', { converted: pages });
         this.allConversions.splice(i, 1);
       }
     }
@@ -191,29 +179,39 @@ export class PDFToImage {
     return this.imagePagesOutput;
   }
 
-  private async renderPagesSequentially(conversion: Conversions) {
+  /**
+   * Listen to a conversion status change.
+   * @param event
+   * @param listener Callback fired at event emission.
+   * @example
+   * const pdf = await new PDFToImage().load(filePath);
+   * 
+   * pdf.on('progress', (data) => {
+    console.log(`data`);
+  });
+   */
+  on<K extends keyof Events>(event: K, listener: (data: Events[K]) => void) {
+    return super.on(event, listener);
+  }
+
+  private async renderPagesSequentially(
+    conversion: Conversions
+  ): Promise<[ImagePageOutput[], Promise<void>[]]> {
     if (!this.pdfDocument) throw new Error('No document has been loaded.');
 
     const images: ImagePageOutput[] = [];
+    const streams: Promise<void>[] = [];
     this.isPaused = false;
     this.isStopped = false;
 
-    const {
-      type,
-      outputFolderName,
-      viewportScale,
-      outputFileName,
-      disableStreams,
-      pdfPages,
-      pages,
-    } = conversion;
-    const firstPageIndex = pages?.[0] || 1;
+    const { type, outputFolderName, viewportScale, outputFileName, disableStreams, pdfPages } =
+      conversion;
     const imageType = type ?? OPTIONS_DEFAULTS.type!;
     const shouldStream = this.shouldStream(disableStreams, outputFolderName);
     const pageName = this.setPageName(outputFileName);
 
-    while (conversion.currentPage < pdfPages.length && !this.isPaused && !this.isStopped) {
-      const page = pdfPages[conversion.currentPage];
+    while (conversion.index < pdfPages.length && !this.isPaused && !this.isStopped) {
+      const page = pdfPages[conversion.index];
       const viewport = page.getViewport({
         scale: viewportScale || OPTIONS_DEFAULTS.viewportScale!,
       });
@@ -227,102 +225,59 @@ export class PDFToImage {
 
       await page.render(renderContext).promise;
 
-      const { pageNumber } = page;
-      const mask = `${pageName}_page_${pageNumber}.${type}`;
+      const currentPage = page.pageNumber;
+      const mask = `${pageName}_page_${currentPage}.${imageType}`;
       const resolvedPathWithMask = resolve(outputFolderName || '', mask);
 
       const imagePageOutput: ImagePageOutput = {
-        pageIndex: pageNumber + firstPageIndex - 1,
+        pageIndex: currentPage,
         type: imageType,
         name: outputFolderName ? mask : pageName,
         content: canvasAndContext.canvas!.toBuffer(),
         ...(outputFolderName ? { path: resolvedPathWithMask } : {}),
       };
 
-      this.imageStream(
-        conversion,
-        imageType,
-        resolvedPathWithMask,
-        canvasAndContext.canvas!,
-        shouldStream
-      );
+      if (shouldStream) {
+        const stream = this.imageStream(
+          conversion,
+          imageType,
+          resolvedPathWithMask,
+          canvasAndContext.canvas!
+        );
+        streams.push(stream);
+      }
 
       page.cleanup();
       this.imagePagesOutput.push(imagePageOutput);
       images.push(imagePageOutput);
 
-      log('page: ', conversion.currentPage);
-      conversion.currentPage += 1;
+      conversion.index += 1;
+
+      this.emit('progress', {
+        currentPage,
+        totalPages: pdfPages.length,
+        progress: +((conversion.index / pdfPages.length) * 100).toFixed(0),
+      });
     }
 
-    if (this.isStopped) conversion.currentPage = 0;
-
-    return images;
+    return [images, streams];
   }
-
-  // private renderPages(resolvedPages: PDFPageProxy[]) {
-  //   const renderTasks: Promise<void>[] = [];
-  //   const { type, outputFolderName, viewportScale } = this.options;
-
-  //   // undefined can still be assigned
-  //   const imageType = type ?? OPTIONS_DEFAULTS.type!;
-
-  //   const shouldStream = this.shouldStream();
-
-  //   for (const page of resolvedPages) {
-  //     const viewport = page.getViewport({
-  //       scale: viewportScale || OPTIONS_DEFAULTS.viewportScale!,
-  //     });
-
-  //     const { width, height } = viewport;
-  //     const canvasAndContext = new NodeCanvasFactory().create(width, height);
-  //     const renderContext = {
-  //       canvasContext: canvasAndContext.context,
-  //       viewport,
-  //     };
-
-  //     const renderPromise = page.render(renderContext);
-  //     renderTasks.push(renderPromise.promise);
-
-  //     const { pageNumber } = page;
-  //     const mask = `${this.pageName}_page_${pageNumber}.${type}`;
-  //     const resolvedPath = resolve(outputFolderName || '', mask);
-
-  //     const imagePageOutput: ImagePageOutput = {
-  //       pageIndex: pageNumber,
-  //       type: imageType,
-  //       name: outputFolderName ? mask : this.pageName!,
-  //       // empty buffer, not rendered yet
-  //       content: Buffer.alloc(0),
-  //       ...(outputFolderName ? { path: resolvedPath } : {}),
-  //     };
-
-  //     this.imageStream(imageType, resolvedPath, canvasAndContext.canvas!, shouldStream);
-
-  //     page.cleanup();
-  //     this.imagePagesOutput.push(imagePageOutput);
-  //     this.allCanvas.push(canvasAndContext);
-  //   }
-
-  //   return renderTasks;
-  // }
 
   private imageStream(
     options: Conversions,
     imageType: ImageType,
     resolvedPath: string,
-    canvas: Canvas,
-    shouldStream: boolean
+    canvas: Canvas
   ) {
-    if (!shouldStream) return;
-
     const { PNG, JPEG } = options;
     const imageStream =
       imageType === 'png' ? canvas.createPNGStream(PNG) : canvas.createJPEGStream(JPEG);
     const streamDestination = createWriteStream(resolvedPath);
 
     const finish = finished(imageStream.pipe(streamDestination));
-    this.imageStreams.push(finish);
+    // this.imageStreams.push(finish);
+
+    return finish;
   }
 
   /**
@@ -393,16 +348,15 @@ export class PDFToImage {
     if (!this.pdfDocument) throw new Error('No document has been loaded.');
 
     const optionsInitialised = initConversionOptions(options);
-    const { outputFolderName, pages, waitForAllStreamsToComplete, disableStreams } =
-      optionsInitialised;
+    const { outputFolderName, pages, disableStreams } = optionsInitialised;
 
     const pagesToResolve = this.populatePagesPromises(pages);
     const pdfPages = await Promise.all(pagesToResolve);
 
     const conversion: Conversions = {
-      ...options,
-      pdfPages: pdfPages,
-      currentPage: 0,
+      ...optionsInitialised,
+      pdfPages,
+      index: 0,
       remainingIndexes: { start: 0, end: 0 },
     };
     this.allConversions.push(conversion);
@@ -411,18 +365,19 @@ export class PDFToImage {
     if (this.isPaused || this.isStopped) return [];
 
     await this.createOutputDirectory(outputFolderName);
-    const images = await this.renderPagesSequentially(conversion);
-    const streams = { disableStreams, outputFolderName, waitForAllStreamsToComplete };
+    const [images, streams] = await this.renderPagesSequentially(conversion);
+    conversion.remainingIndexes.end = conversion.index;
 
-    if (this.shouldWaitForAllStreams(streams)) {
-      await Promise.all(this.imageStreams);
+    if (this.shouldWaitForAllStreams(conversion)) {
+      await Promise.all(streams);
     }
     if (this.shouldWriteAsyncToAFile(outputFolderName, disableStreams)) {
-      await this.writeFile(outputFolderName!);
+      await this.writeFile(outputFolderName!, images);
     }
 
     // one index higher because +1 at end of renderPages
-    if (conversion.currentPage === pdfPages.length) {
+    if (conversion.remainingIndexes.end === pdfPages.length) {
+      this.emit('end', { converted: pages });
       this.allConversions.pop();
     }
 
@@ -445,7 +400,7 @@ export class PDFToImage {
     return Boolean(disableStreams && outputFolderName);
   }
 
-  private async writeFile(outputFolderName: string, rendered = this.imagePagesOutput) {
+  private async writeFile(outputFolderName: string, rendered: ImagePageOutput[]) {
     const pages: Promise<void>[] = [];
 
     for (const page of rendered) {

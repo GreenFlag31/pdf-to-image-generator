@@ -42,8 +42,31 @@ const options: PDFToIMGOptions = {
 // Load the pdf file
 const pdf = await new PDFToImage().load(filePath);
 
-// Convert your PDF to PNG or JPEG
+setTimeout(() => {
+  // Simulating a user pausing the conversion flows
+  pdf.pause();
+
+  setTimeout(async () => {
+    // Resume conversion flows
+    await pdf.resume();
+  }, 500);
+}, 500);
+
+// Listen to a progression event
+pdf.on('progress', (data) => {
+  console.log(
+    `Page: ${data.currentPage}. Total: ${data.totalPages}. Progression: ${data.progress}%`
+  );
+});
+
+// Notification of end of conversion
+pdf.on('end', (data) => {
+  console.log('End of conversion.', data);
+});
+
+// Convert your PDF to image
 const pdf = await pdfConversion.convert(options);
+// Other conversion flows with the same pdf but different options
 ```
 
 ## Developer experience
@@ -60,7 +83,7 @@ V0.0.3: Minor API changes. Exposing the text content in a separate method. Width
 
 V0.0.5: Exposing the name of the file in the getTextContent method.
 
-V0.0.6: API changes, giving more flexibility and offering a cleaner way of options initialisation. Adding pausing, resume and stop methods to give more control over the conversion flow.
+V0.0.6: API changes, giving more flexibility and offering a cleaner way of options initialisation. Adding pausing, resume and stop methods to give more control over the conversion flow. Adding progression and end events.
 
 ## Discover others libraries
 

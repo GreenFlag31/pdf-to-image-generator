@@ -3,7 +3,7 @@ import { PDFToIMGOptions } from './pdf.to.image.options';
 
 export interface Conversions extends PDFToIMGOptions {
   pdfPages: PDFPageProxy[];
-  currentPage: number;
+  index: number;
   remainingIndexes: Interval;
 }
 
