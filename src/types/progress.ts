@@ -1,8 +1,10 @@
 /**
  * Displays the progress of images conversion.
  * @example
- * pdf.on('progress', (data) => {
-    console.log(`Progression: ${data.currentPage}/${data.totalPages} pages ${data.progress}%`);
+  pdf.on('progress', (data) => {
+    console.log(
+      `Page: ${data.currentPage}. Total: ${data.totalPages}. Progression: ${data.progress}%`
+    );
 });
  */
 export interface Progress {

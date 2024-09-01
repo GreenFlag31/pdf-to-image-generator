@@ -1,6 +1,6 @@
 import { Canvas } from 'canvas';
 import { createReadStream, createWriteStream, promises as fsPromises, Stats } from 'node:fs';
-import path, { parse, resolve } from 'node:path';
+import { parse, resolve } from 'node:path';
 import {
   TextContent,
   TextItem,
@@ -17,18 +17,25 @@ import { Conversions, Streams } from './types/all.conversions';
 import EventEmitter from 'node:events';
 import { Events } from './types/progress';
 
-export class PDFToImage extends EventEmitter {
+export class PDFToImage {
   private pdfDocument!: PDFDocumentProxy;
   private imagePagesOutput: ImagePageOutput[] = [];
-  // private imageStreams: Promise<void>[] = [];
   private textContents: Promise<TextContent>[] = [];
   private file: string | Buffer = '';
   private isPaused = false;
   private isStopped = false;
   private allConversions: Conversions[] = [];
+  private eventEmitter: EventEmitter;
 
   constructor() {
-    super();
+    this.eventEmitter = new EventEmitter();
+  }
+
+  /**
+   * Get all the images that have been converted.
+   */
+  get convertedImages() {
+    return this.imagePagesOutput;
   }
 
   private setPageName(outputFileName?: string) {
@@ -69,10 +76,17 @@ export class PDFToImage extends EventEmitter {
     });
   }
 
+  private setPagesArray(pages?: number[]) {
+    const maxPages = this.pdfDocument.numPages;
+    const allPages = pages || [...Array(maxPages).keys()].map((x) => ++x);
+
+    return allPages;
+  }
+
   private populatePagesPromises(pages?: number[]) {
     const pagesPromises: Promise<PDFPageProxy>[] = [];
     const maxPages = this.pdfDocument.numPages;
-    const allPages = pages || [...Array(maxPages).keys()].map((x) => ++x);
+    const allPages = this.setPagesArray(pages);
 
     for (const page of allPages) {
       if (page > maxPages) continue;
@@ -134,6 +148,7 @@ export class PDFToImage extends EventEmitter {
    */
   stop() {
     this.isStopped = true;
+    this.isPaused = false;
     this.allConversions = [];
   }
 
@@ -162,7 +177,7 @@ export class PDFToImage extends EventEmitter {
         await Promise.all(streams);
       }
       if (this.shouldWriteAsyncToAFile(outputFolderName, disableStreams)) {
-        await this.writeFile(outputFolderName!, images);
+        await this.writeFile(images);
       }
     }
 
@@ -171,7 +186,7 @@ export class PDFToImage extends EventEmitter {
 
       // one index higher because +1 at end of renderPages
       if (remainingIndexes.end === pdfPages.length) {
-        this.emit('end', { converted: pages });
+        this.eventEmitter.emit('end', { converted: this.setPagesArray(pages) });
         this.allConversions.splice(i, 1);
       }
     }
@@ -187,11 +202,11 @@ export class PDFToImage extends EventEmitter {
    * const pdf = await new PDFToImage().load(filePath);
    * 
    * pdf.on('progress', (data) => {
-    console.log(`data`);
+    console.log(`${data}`);
   });
    */
   on<K extends keyof Events>(event: K, listener: (data: Events[K]) => void) {
-    return super.on(event, listener);
+    return this.eventEmitter.on(event, listener);
   }
 
   private async renderPagesSequentially(
@@ -253,7 +268,7 @@ export class PDFToImage extends EventEmitter {
 
       conversion.index += 1;
 
-      this.emit('progress', {
+      this.eventEmitter.emit('progress', {
         currentPage,
         totalPages: pdfPages.length,
         progress: +((conversion.index / pdfPages.length) * 100).toFixed(0),
@@ -273,9 +288,7 @@ export class PDFToImage extends EventEmitter {
     const imageStream =
       imageType === 'png' ? canvas.createPNGStream(PNG) : canvas.createJPEGStream(JPEG);
     const streamDestination = createWriteStream(resolvedPath);
-
     const finish = finished(imageStream.pipe(streamDestination));
-    // this.imageStreams.push(finish);
 
     return finish;
   }
@@ -311,19 +324,14 @@ export class PDFToImage extends EventEmitter {
     const allImagesStats: Promise<Stats>[] = [];
 
     for (const page of this.imagePagesOutput) {
-      const { path: pagePath, name } = page;
-      if (!pagePath) continue;
+      const { path } = page;
+      if (!path) continue;
 
-      const splittedPath = pagePath.split(path.sep);
-      const folder = splittedPath.at(-2);
-
-      const pgnPath = resolve(folder || '', name);
-      const imgStat = fsPromises.stat(pgnPath);
+      const imgStat = fsPromises.stat(path);
       allImagesStats.push(imgStat);
     }
 
     const allImagesStatsResolved = await Promise.all(allImagesStats);
-
     const total = allImagesStatsResolved.reduce((acc, cur) => {
       return acc + cur.size;
     }, 0);
@@ -372,12 +380,12 @@ export class PDFToImage extends EventEmitter {
       await Promise.all(streams);
     }
     if (this.shouldWriteAsyncToAFile(outputFolderName, disableStreams)) {
-      await this.writeFile(outputFolderName!, images);
+      await this.writeFile(images);
     }
 
     // one index higher because +1 at end of renderPages
     if (conversion.remainingIndexes.end === pdfPages.length) {
-      this.emit('end', { converted: pages });
+      this.eventEmitter.emit('end', { converted: this.setPagesArray(pages) });
       this.allConversions.pop();
     }
 
@@ -400,13 +408,12 @@ export class PDFToImage extends EventEmitter {
     return Boolean(disableStreams && outputFolderName);
   }
 
-  private async writeFile(outputFolderName: string, rendered: ImagePageOutput[]) {
+  private async writeFile(rendered: ImagePageOutput[]) {
     const pages: Promise<void>[] = [];
 
     for (const page of rendered) {
       const { name, content } = page;
-      const resolvedPath = resolve(outputFolderName, name);
-      const file = fsPromises.writeFile(resolvedPath, content);
+      const file = fsPromises.writeFile(name, content);
 
       pages.push(file);
     }
