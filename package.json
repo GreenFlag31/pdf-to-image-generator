@@ -1,6 +1,6 @@
 {
   "name": "pdf-to-image-generator",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Performant Node.js library to convert PDF file/buffer pages to PNG or JPEG files/buffers.",
   "keywords": [
     "pdf",

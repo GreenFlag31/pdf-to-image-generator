@@ -78,7 +78,11 @@ export class PDFToImage {
 
   private setPagesArray(pages?: number[]) {
     const maxPages = this.pdfDocument.numPages;
-    const allPages = pages || [...Array(maxPages).keys()].map((x) => ++x);
+    let allPages = [...Array(maxPages).keys()].map((x) => ++x);
+
+    if ((pages || []).length > 0) {
+      allPages = [...new Set(pages)];
+    }
 
     return allPages;
   }
@@ -89,7 +93,7 @@ export class PDFToImage {
     const allPages = this.setPagesArray(pages);
 
     for (const page of allPages) {
-      if (page > maxPages) continue;
+      if (page > maxPages || typeof page !== 'number') continue;
 
       const pdfPage = this.pdfDocument.getPage(page);
       pagesPromises.push(pdfPage);
@@ -101,7 +105,7 @@ export class PDFToImage {
   /**
    * Get the text content and the language of the document, page per page.
    * Usefull if you want to render only some pages based on the text content (conversion can be CPU intensive).
-   * @param {number[] | undefined} pages The pages to get the content from. The whole document is taken into account if pages is undefined.
+   * @param {number[] | undefined} pages The pages to get the content from. The whole document is taken into account if pages is undefined or empty.
    */
   async getTextContent(pages?: number[]) {
     if (!this.pdfDocument) throw new Error('No document has been loaded.');
@@ -350,7 +354,7 @@ export class PDFToImage {
 
   /**
    * Convert the PDF to PNG or JPEG according to the options provided.
-   * @param {options} options Options respecting the {@link PDFToIMGOptions} interface
+   * @param {options} options Options respecting the {@link PDFToIMGOptions} interface. Duplicate page index will be removed. The whole document is taken into account if pages is undefined or empty.
    */
   async convert(options: PDFToIMGOptions) {
     if (!this.pdfDocument) throw new Error('No document has been loaded.');

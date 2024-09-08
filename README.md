@@ -79,11 +79,13 @@ Feel free! [Open a ticket](https://github.com/GreenFlag31/pdf-to-image-generator
 
 ## Changelog
 
-V0.0.3: Minor API changes. Exposing the text content in a separate method. Width and height have been removed from the returned object of conversion.
+V0.0.3: [MINOR] API changes. Exposing the text content in a separate method. Width and height have been removed from the returned object of conversion.
 
-V0.0.5: Exposing the name of the file in the getTextContent method.
+V0.0.5: [MINOR] Exposing the name of the file in the getTextContent method.
 
-V0.0.6: API changes, giving more flexibility and offering a cleaner way of options initialisation. Adding pausing, resume and stop methods to give more control over the conversion flow. Adding progression and end events.
+V0.0.6: [MAJOR] API changes, giving more flexibility and offering a cleaner way of options initialisation. Adding pausing, resume and stop methods to give more control over the conversion flow. Adding progression and end events.
+
+V0.0.7: [MINOR] Removal of possible duplicate page index in the option provided by the user and adding verification.
 
 ## Discover others libraries
 
