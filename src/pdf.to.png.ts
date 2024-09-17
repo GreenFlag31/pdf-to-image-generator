@@ -38,6 +38,13 @@ export class PDFToImage {
     return this.imagePagesOutput;
   }
 
+  /**
+   * Get the PDF document after having it loaded. Usefull to get (for example) the number of pages of the document.
+   */
+  get document() {
+    return this.pdfDocument;
+  }
+
   private setPageName(outputFileName?: string) {
     const isBuffer = Buffer.isBuffer(this.file);
     let pageName = '';
@@ -49,6 +56,13 @@ export class PDFToImage {
     }
 
     return pageName;
+  }
+
+  private getDocumentName() {
+    const isBuffer = Buffer.isBuffer(this.file);
+    if (isBuffer) return undefined;
+
+    return parse(this.file as string).name;
   }
 
   private async readFile(file: string, disableStreams: boolean): Promise<Buffer> {
@@ -148,7 +162,7 @@ export class PDFToImage {
   }
 
   /**
-   * Stop and remove all conversions processes.
+   * Stop and remove all pending conversions processes.
    */
   stop() {
     this.isStopped = true;
@@ -161,6 +175,23 @@ export class PDFToImage {
    */
   pause() {
     this.isPaused = true;
+  }
+
+  /**
+   * Remove the generated images. Do not remove the containing directory.
+   */
+  async removeGeneratedImagesOnDisk() {
+    const toBeRemoved: Promise<void>[] = [];
+
+    for (const image of this.imagePagesOutput) {
+      const { path } = image;
+      if (!path) continue;
+
+      const toRemove = fsPromises.rm(path);
+      toBeRemoved.push(toRemove);
+    }
+
+    await Promise.all(toBeRemoved);
   }
 
   /**
@@ -228,6 +259,7 @@ export class PDFToImage {
     const imageType = type ?? OPTIONS_DEFAULTS.type!;
     const shouldStream = this.shouldStream(disableStreams, outputFolderName);
     const pageName = this.setPageName(outputFileName);
+    const documentName = this.getDocumentName();
 
     while (conversion.index < pdfPages.length && !this.isPaused && !this.isStopped) {
       const page = pdfPages[conversion.index];
@@ -251,9 +283,10 @@ export class PDFToImage {
       const imagePageOutput: ImagePageOutput = {
         pageIndex: currentPage,
         type: imageType,
-        name: outputFolderName ? mask : pageName,
-        content: canvasAndContext.canvas!.toBuffer(),
+        ...(outputFolderName ? { name: mask } : {}),
+        ...(documentName ? { documentName } : {}),
         ...(outputFolderName ? { path: resolvedPathWithMask } : {}),
+        content: canvasAndContext.canvas!.toBuffer(),
       };
 
       if (shouldStream) {
@@ -417,7 +450,7 @@ export class PDFToImage {
 
     for (const page of rendered) {
       const { name, content } = page;
-      const file = fsPromises.writeFile(name, content);
+      const file = fsPromises.writeFile(name!, content);
 
       pages.push(file);
     }

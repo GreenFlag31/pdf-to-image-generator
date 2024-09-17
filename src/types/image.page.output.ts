@@ -32,9 +32,13 @@ export interface ImagePageOutput {
    */
   type: ImageType;
   /**
-   * The name of the image (filemask) or the name of the PDF.
+   * The name of the image (if rendered).
    */
-  name: string;
+  name?: string;
+  /**
+   * The name of the pdf document (if not a buffer).
+   */
+  documentName?: string;
   /**
    * Buffer content of the image.
    */

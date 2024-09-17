@@ -87,6 +87,8 @@ V0.0.6: [MAJOR] API changes, giving more flexibility and offering a cleaner way 
 
 V0.0.7: [MINOR] Removal of possible duplicate page index in the option provided by the user and adding verification.
 
+V0.0.8: [MINOR] Addition of a method to remove generated images on disk. Addition of a getter for accessing the loaded pdf document and all its methods. Minor changes to the returned object of conversion.
+
 ## Discover others libraries
 
 All libraries are permanently supported. Discover them [here](https://www.npmjs.com/~greenflag31).

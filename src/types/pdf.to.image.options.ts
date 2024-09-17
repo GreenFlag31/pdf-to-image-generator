@@ -48,6 +48,7 @@ export type PDFToIMGOptions = {
   PNG?: PNGConfig;
   /**
    * The name of the folder where images will be rendered.
+   * Pass __dirname if you wish to have the images at same level.
    * @defaultValue undefined
    */
   outputFolderName?: string;
