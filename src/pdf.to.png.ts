@@ -449,8 +449,8 @@ export class PDFToImage {
     const pages: Promise<void>[] = [];
 
     for (const page of rendered) {
-      const { name, content } = page;
-      const file = fsPromises.writeFile(name!, content);
+      const { path, content } = page;
+      const file = fsPromises.writeFile(path!, content);
 
       pages.push(file);
     }
