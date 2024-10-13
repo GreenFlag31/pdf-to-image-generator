@@ -1,6 +1,6 @@
 {
   "name": "pdf-to-image-generator",
-  "version": "0.0.9",
+  "version": "1.0.0",
   "description": "Performant Node.js library to convert PDF file/buffer pages to PNG or JPEG files/buffers.",
   "keywords": [
     "pdf",
@@ -29,15 +29,14 @@
     "build": "tsc && @powershell copy './package.json' 'dist/' && @powershell copy 'README.md' 'dist/' ",
     "pretest": "npm run clean && npm run build:test",
     "test": "mocha",
-    "start:dev": "tsc-watch --onSuccess \"node dist/index.js\""
+    "start:dev": "tsc-watch --onSuccess \"node dist/test.js\""
   },
   "dependencies": {
     "canvas": "^2.11.2",
-    "pdfjs-dist": "^4.5.136"
+    "pdfjs-dist": "^4.7.76"
   },
   "devDependencies": {
     "@types/chai": "^4.3.12",
-    "@types/express": "^4.17.21",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.11.27",
     "@typescript-eslint/eslint-plugin": "^7.2.0",

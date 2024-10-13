@@ -1,6 +1,7 @@
 {
   "entryPoints": ["src/index.ts"],
   "out": "docs",
+  "projectDocuments": ["./performance.md"],
   "exclude": ["**/__tests__/**", "**/*.spec.ts", "**/node_modules/**"],
   "includeVersion": true, // Inclure la version du package dans la documentation
   "name": "pdf-to-image-generator", // Nom de votre librairie

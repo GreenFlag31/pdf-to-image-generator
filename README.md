@@ -1,6 +1,6 @@
 # pdf-to-image-generator
 
-Performant and lightweight Node.js library to convert PDF file/buffer pages to PNG or JPEG files/buffers without binary and OS dependencies (except MacOs on arm64). Designed with high focus on performance and developer experience.
+Performant and lightweight Node.js library to convert PDF file/buffer pages to PNG or JPEG files/buffers without binary and OS dependencies\*. Designed with high focus on performance and developer experience.
 
 ## Getting started
 
@@ -12,13 +12,11 @@ Installation:
 npm install pdf-to-image-generator
 ```
 
-### MacOs M1 prerequisites
+### Prerequisites
 
-MacOs M1 dependencies prerequisites installation:
+\*There are no prerequisites for Windows (tested on 10).
 
-```bash
-arch -arm64 brew install pkg-config cairo pango libpng librsvg
-```
+For others OS, please refer to the [node canvas dependancies](https://www.npmjs.com/package/canvas)
 
 ## Documentation
 
@@ -35,12 +33,17 @@ const options: PDFToIMGOptions = {
   outputFolderName: 'upload',
   // controls scaling
   viewportScale: 2,
-  // disable streams
-  disableStreams: true,
+  type: 'jpeg',
 };
 
 // Load the pdf file
 const pdf = await new PDFToImage().load(filePath);
+
+// Get the number of pages of the document
+const numPages = pdf.document.numPages;
+
+// Get the text content of the document
+const textContent = await pdf.getTextContent();
 
 setTimeout(() => {
   // Simulating a user pausing the conversion flows
@@ -65,8 +68,11 @@ pdf.on('end', (data) => {
 });
 
 // Convert your PDF to image
-const pdf = await pdfConversion.convert(options);
-// Other conversion flows with the same pdf but different options
+const pdfConversion = await pdf.convert(options);
+// Other conversion flows with the same pdf but different options...
+
+// Remove generated images on disk
+await pdf.removeGeneratedImagesOnDisk();
 ```
 
 ## Developer experience
@@ -90,6 +96,8 @@ V0.0.7: [MINOR] Removal of possible duplicate page index in the option provided 
 V0.0.8: [MINOR] Addition of a method to remove generated images on disk. Addition of a getter for accessing the loaded pdf document and all its methods. Minor changes to the returned object of conversion.
 
 V0.0.9: [MINOR] Bug path correction.
+
+V1.0.0: [MINOR] Performance improvement and adding child process documentation.
 
 ## Discover others libraries
 

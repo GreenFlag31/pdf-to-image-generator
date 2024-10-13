@@ -63,8 +63,7 @@ export type PDFToIMGOptions = {
    */
   pages?: number[];
   /**
-   * Disable streams. Will increase memory consumption, but might be faster for reasonable file size.
-   * Since it might crash or slow down the application if large files - concurrent requests - high image quality, it is defaulted to false.
+   * Disable streams.
    * @defaultValue false
    */
   disableStreams?: boolean;
@@ -73,6 +72,14 @@ export type PDFToIMGOptions = {
    * @defaultValue true
    */
   waitForAllStreamsToComplete?: boolean;
+  /**
+   * Include the buffer content in the response, increase the response weight.
+   * Usefull if you want to render once more the images later.
+   * If streams are disabled, the content will be present in the response.
+   * Including buffer content will cause a performance hit.
+   * @defaultValue false
+   */
+  includeBufferContent?: boolean;
 };
 
 /**

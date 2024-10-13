@@ -7,6 +7,7 @@ export const OPTIONS_DEFAULTS: PDFToIMGOptions = {
   viewportScale: 1,
   disableStreams: false,
   waitForAllStreamsToComplete: true,
+  includeBufferContent: false,
 };
 
 export const BASE_PROPERTIES: DocumentInitParameters = {

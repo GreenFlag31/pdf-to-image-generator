@@ -42,7 +42,7 @@ export interface ImagePageOutput {
   /**
    * Buffer content of the image.
    */
-  content: Buffer;
+  content?: Buffer;
   /**
    * Path where the image has been rendered.
    */

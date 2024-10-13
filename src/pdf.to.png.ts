@@ -254,8 +254,15 @@ export class PDFToImage {
     this.isPaused = false;
     this.isStopped = false;
 
-    const { type, outputFolderName, viewportScale, outputFileName, disableStreams, pdfPages } =
-      conversion;
+    const {
+      type,
+      outputFolderName,
+      viewportScale,
+      outputFileName,
+      disableStreams,
+      pdfPages,
+      includeBufferContent,
+    } = conversion;
     const imageType = type ?? OPTIONS_DEFAULTS.type!;
     const shouldStream = this.shouldStream(disableStreams, outputFolderName);
     const pageName = this.setPageName(outputFileName);
@@ -264,7 +271,7 @@ export class PDFToImage {
     while (conversion.index < pdfPages.length && !this.isPaused && !this.isStopped) {
       const page = pdfPages[conversion.index];
       const viewport = page.getViewport({
-        scale: viewportScale || OPTIONS_DEFAULTS.viewportScale!,
+        scale: viewportScale!,
       });
 
       const { width, height } = viewport;
@@ -277,8 +284,10 @@ export class PDFToImage {
       await page.render(renderContext).promise;
 
       const currentPage = page.pageNumber;
-      const mask = `${pageName}_page_${currentPage}.${imageType}`;
+      const padStartedCurrentPage = currentPage.toString().padStart(3, '0');
+      const mask = `${pageName}_${padStartedCurrentPage}.${imageType}`;
       const resolvedPathWithMask = resolve(outputFolderName || '', mask);
+      const shouldIncludeContent = includeBufferContent || !shouldStream;
 
       const imagePageOutput: ImagePageOutput = {
         pageIndex: currentPage,
@@ -286,7 +295,15 @@ export class PDFToImage {
         ...(outputFolderName ? { name: mask } : {}),
         ...(documentName ? { documentName } : {}),
         ...(outputFolderName ? { path: resolvedPathWithMask } : {}),
-        content: canvasAndContext.canvas!.toBuffer(),
+        ...(shouldIncludeContent
+          ? {
+              content: canvasAndContext.canvas!.toBuffer(
+                // @ts-ignore
+                `image/${imageType}`,
+                imageType === 'png' ? conversion.PNG : conversion.JPEG
+              ),
+            }
+          : {}),
       };
 
       if (shouldStream) {
@@ -344,7 +361,7 @@ export class PDFToImage {
     try {
       const fileBuffer = isBuffer ? file : await this.readFile(file, disableStreams);
 
-      const docParams = initPDFOptions(fileBuffer, options);
+      const docParams = initPDFOptions(fileBuffer, pdf, options);
       this.pdfDocument = await pdf.getDocument(docParams).promise;
 
       return this;
@@ -410,6 +427,7 @@ export class PDFToImage {
     if (this.isPaused || this.isStopped) return [];
 
     await this.createOutputDirectory(outputFolderName);
+
     const [images, streams] = await this.renderPagesSequentially(conversion);
     conversion.remainingIndexes.end = conversion.index;
 
@@ -450,7 +468,7 @@ export class PDFToImage {
 
     for (const page of rendered) {
       const { path, content } = page;
-      const file = fsPromises.writeFile(path!, content);
+      const file = fsPromises.writeFile(path!, content!);
 
       pages.push(file);
     }

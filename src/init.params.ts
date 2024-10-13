@@ -9,10 +9,15 @@ export function initConversionOptions(options: PDFToIMGOptions): PDFToIMGOptions
   });
 }
 
-export function initPDFOptions(fileBuffer: Buffer, options?: PDFOptions): DocumentInitParameters {
+export function initPDFOptions(
+  fileBuffer: Buffer,
+  pdf: any,
+  options?: PDFOptions
+): DocumentInitParameters {
   return Object.freeze({
     ...BASE_PROPERTIES,
     ...options,
     data: new Uint8Array(fileBuffer),
+    // worker: new pdf.PDFWorker(),
   });
 }
