@@ -254,6 +254,8 @@ export class PDFToImage {
     this.isPaused = false;
     this.isStopped = false;
 
+    // "pdfjs-dist": "^4.7.76"
+
     const {
       type,
       outputFolderName,
@@ -336,7 +338,7 @@ export class PDFToImage {
     options: Conversions,
     imageType: ImageType,
     resolvedPath: string,
-    canvas: Canvas
+    canvas: any
   ) {
     const { PNG, JPEG } = options;
     const imageStream =

@@ -21,10 +21,6 @@
   "license": "MIT",
   "author": "Manu Claeys <unam31@gmail.com>",
   "main": "index.js",
-  "types": "index.d.ts",
-  "files": [
-    "**"
-  ],
   "scripts": {
     "build": "tsc && @powershell copy './package.json' 'dist/' && @powershell copy 'README.md' 'dist/' ",
     "pretest": "npm run clean && npm run build:test",
