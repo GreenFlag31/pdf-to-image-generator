@@ -3,21 +3,20 @@ import { BASE_PROPERTIES, OPTIONS_DEFAULTS } from './const';
 import { PDFOptions, PDFToIMGOptions } from './types/pdf.to.image.options';
 
 export function initConversionOptions(options: PDFToIMGOptions): PDFToIMGOptions {
+  const possibleTypes = ['png', 'jpeg'];
+  const currentType = options.type;
+  options.type = !possibleTypes.includes(currentType || '') ? 'jpeg' : currentType;
+
   return Object.freeze({
     ...OPTIONS_DEFAULTS,
     ...options,
   });
 }
 
-export function initPDFOptions(
-  fileBuffer: Buffer,
-  pdf: any,
-  options?: PDFOptions
-): DocumentInitParameters {
+export function initPDFOptions(fileBuffer: Buffer, options?: PDFOptions): DocumentInitParameters {
   return Object.freeze({
     ...BASE_PROPERTIES,
     ...options,
     data: new Uint8Array(fileBuffer),
-    // worker: new pdf.PDFWorker(),
   });
 }

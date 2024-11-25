@@ -7,7 +7,7 @@ Performant and lightweight Node.js library to convert PDF file/buffer pages to P
 | 2-pages-pdf-with-forms         | 425ms                  | 88% slower           | 109% slower |
 | large-pdf-with-old-characters  | 16200ms                | 9% slower            | 12% slower  |
 | rich-pdf-with-images-form-text | 18600ms                | 2% slower            | 9% slower   |
-| streams support                | ✔️                     | ❌                   | ❌          |
+| streams support\*              | ✔️                     | ❌                   | ❌          |
 | jpeg support                   | ✔️                     | ❌                   | ❌          |
 | pausing flow                   | ✔️                     | ❌                   | ❌          |
 | resume flow                    | ✔️                     | ❌                   | ❌          |
@@ -15,6 +15,11 @@ Performant and lightweight Node.js library to convert PDF file/buffer pages to P
 | get number pages               | ✔️                     | ❌                   | ❌          |
 | get text content               | ✔️                     | ❌                   | ❌          |
 | progression event              | ✔️                     | ❌                   | ❌          |
+| class based API\*\*            | ✔️                     | ❌                   | ❌          |
+
+\*_Not using streams means higher memory consumption, which can lead to a server crash if memory is exhausted (for example, with a certain number of simultaneous requests)._
+
+\*\*_A class-based API offers more flexibility, allowing for reusable instances and caching, which improves efficiency across multiple conversion processes._
 
 ## Getting started
 
@@ -47,7 +52,6 @@ const options: PDFToIMGOptions = {
   outputFolderName: 'upload',
   // controls scaling
   viewportScale: 2,
-  type: 'jpeg',
 };
 
 // Load the pdf file
@@ -112,6 +116,8 @@ V0.0.8: [MINOR] Addition of a method to remove generated images on disk. Additio
 V0.0.9: [MINOR] Bug path correction.
 
 V1.0.0: [MINOR] Performance improvement and adding child process documentation.
+
+V1.0.1: [MINOR] Bug correction, setting jpeg as default type, changing behavior if empty array of pages is passed (no action is taken) and adding tests.
 
 ## Discover others libraries
 

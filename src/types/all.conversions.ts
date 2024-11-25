@@ -4,12 +4,13 @@ import { PDFToIMGOptions } from './pdf.to.image.options';
 export interface Conversions extends PDFToIMGOptions {
   pdfPages: PDFPageProxy[];
   index: number;
-  remainingIndexes: Interval;
+  documentName: string | undefined;
 }
 
-export interface Interval {
-  start: number;
-  end: number;
+export interface PendingConversions {
+  progression: number;
+  total: number;
+  documentName: string | undefined;
 }
 
 export interface Streams {

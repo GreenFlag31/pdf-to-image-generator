@@ -35,7 +35,7 @@ export type PDFToIMGOptions = {
   viewportScale?: number;
   /**
    * Choose between PNG or JPEG.
-   * @defaultValue PNG
+   * @defaultValue JPEG
    */
   type?: ImageType;
   /**

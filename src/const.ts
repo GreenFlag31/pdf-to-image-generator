@@ -3,7 +3,7 @@ import { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
 import { PDFToIMGOptions } from './types/pdf.to.image.options';
 
 export const OPTIONS_DEFAULTS: PDFToIMGOptions = {
-  type: 'png',
+  type: 'jpeg',
   viewportScale: 1,
   disableStreams: false,
   waitForAllStreamsToComplete: true,

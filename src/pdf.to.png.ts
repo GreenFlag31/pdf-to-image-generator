@@ -13,7 +13,7 @@ import { NodeCanvasFactory } from './node.canvas.factory';
 import { initPDFOptions, initConversionOptions } from './init.params';
 import { finished } from 'node:stream/promises';
 import { ImageType, PDFOptions, PDFToIMGOptions } from './types/pdf.to.image.options';
-import { Conversions, Streams } from './types/all.conversions';
+import { Conversions, PendingConversions, Streams } from './types/all.conversions';
 import EventEmitter from 'node:events';
 import { Events } from './types/progress';
 
@@ -36,6 +36,24 @@ export class PDFToImage {
    */
   get convertedImages() {
     return this.imagePagesOutput;
+  }
+
+  /**
+   * Get all pending conversions.
+   */
+  get pendingConversions() {
+    const pendings: PendingConversions[] = [];
+
+    for (const conversion of this.allConversions) {
+      const { documentName, index, pdfPages } = conversion;
+      pendings.push({
+        documentName,
+        progression: index + 1,
+        total: pdfPages.length,
+      });
+    }
+
+    return pendings;
   }
 
   /**
@@ -91,6 +109,8 @@ export class PDFToImage {
   }
 
   private setPagesArray(pages?: number[]) {
+    if (Array.isArray(pages) && pages.length === 0) return [];
+
     const maxPages = this.pdfDocument.numPages;
     let allPages = [...Array(maxPages).keys()].map((x) => ++x);
 
@@ -103,11 +123,14 @@ export class PDFToImage {
 
   private populatePagesPromises(pages?: number[]) {
     const pagesPromises: Promise<PDFPageProxy>[] = [];
+    const minPages = 1;
     const maxPages = this.pdfDocument.numPages;
     const allPages = this.setPagesArray(pages);
 
     for (const page of allPages) {
-      if (page > maxPages || typeof page !== 'number') continue;
+      if (page > maxPages || page < minPages || typeof page !== 'number') {
+        continue;
+      }
 
       const pdfPage = this.pdfDocument.getPage(page);
       pagesPromises.push(pdfPage);
@@ -201,12 +224,10 @@ export class PDFToImage {
     if (!this.isPaused || this.isStopped) return [];
 
     for (const conversion of this.allConversions) {
-      const { outputFolderName, disableStreams, remainingIndexes } = conversion;
+      const { outputFolderName, disableStreams } = conversion;
       await this.createOutputDirectory(outputFolderName);
 
-      remainingIndexes.start = conversion.index;
       const [images, streams] = await this.renderPagesSequentially(conversion);
-      remainingIndexes.end = conversion.index;
 
       if (this.shouldWaitForAllStreams(conversion)) {
         await Promise.all(streams);
@@ -217,10 +238,10 @@ export class PDFToImage {
     }
 
     for (let i = this.allConversions.length - 1; i >= 0; i--) {
-      const { remainingIndexes, pdfPages, pages } = this.allConversions[i];
+      const { index, pdfPages, pages } = this.allConversions[i];
 
-      // one index higher because +1 at end of renderPages
-      if (remainingIndexes.end === pdfPages.length) {
+      // index get a +1 at end of renderPages
+      if (index === pdfPages.length) {
         this.eventEmitter.emit('end', { converted: this.setPagesArray(pages) });
         this.allConversions.splice(i, 1);
       }
@@ -254,8 +275,6 @@ export class PDFToImage {
     this.isPaused = false;
     this.isStopped = false;
 
-    // "pdfjs-dist": "^4.7.76"
-
     const {
       type,
       outputFolderName,
@@ -265,7 +284,8 @@ export class PDFToImage {
       pdfPages,
       includeBufferContent,
     } = conversion;
-    const imageType = type ?? OPTIONS_DEFAULTS.type!;
+
+    const imageType = type as ImageType;
     const shouldStream = this.shouldStream(disableStreams, outputFolderName);
     const pageName = this.setPageName(outputFileName);
     const documentName = this.getDocumentName();
@@ -321,7 +341,6 @@ export class PDFToImage {
       page.cleanup();
       this.imagePagesOutput.push(imagePageOutput);
       images.push(imagePageOutput);
-
       conversion.index += 1;
 
       this.eventEmitter.emit('progress', {
@@ -338,7 +357,7 @@ export class PDFToImage {
     options: Conversions,
     imageType: ImageType,
     resolvedPath: string,
-    canvas: any
+    canvas: Canvas
   ) {
     const { PNG, JPEG } = options;
     const imageStream =
@@ -363,7 +382,7 @@ export class PDFToImage {
     try {
       const fileBuffer = isBuffer ? file : await this.readFile(file, disableStreams);
 
-      const docParams = initPDFOptions(fileBuffer, pdf, options);
+      const docParams = initPDFOptions(fileBuffer, options);
       this.pdfDocument = await pdf.getDocument(docParams).promise;
 
       return this;
@@ -406,7 +425,7 @@ export class PDFToImage {
 
   /**
    * Convert the PDF to PNG or JPEG according to the options provided.
-   * @param {options} options Options respecting the {@link PDFToIMGOptions} interface. Duplicate page index will be removed. The whole document is taken into account if pages is undefined or empty.
+   * @param {options} options Options respecting the {@link PDFToIMGOptions} interface. Duplicate page index will be removed. The whole document is taken into account if pages is undefined.
    */
   async convert(options: PDFToIMGOptions) {
     if (!this.pdfDocument) throw new Error('No document has been loaded.');
@@ -421,7 +440,7 @@ export class PDFToImage {
       ...optionsInitialised,
       pdfPages,
       index: 0,
-      remainingIndexes: { start: 0, end: 0 },
+      documentName: this.getDocumentName(),
     };
     this.allConversions.push(conversion);
 
@@ -431,7 +450,6 @@ export class PDFToImage {
     await this.createOutputDirectory(outputFolderName);
 
     const [images, streams] = await this.renderPagesSequentially(conversion);
-    conversion.remainingIndexes.end = conversion.index;
 
     if (this.shouldWaitForAllStreams(conversion)) {
       await Promise.all(streams);
@@ -440,8 +458,8 @@ export class PDFToImage {
       await this.writeFile(images);
     }
 
-    // one index higher because +1 at end of renderPages
-    if (conversion.remainingIndexes.end === pdfPages.length) {
+    // index get a +1 at end of renderPages
+    if (conversion.index === pdfPages.length) {
       this.eventEmitter.emit('end', { converted: this.setPagesArray(pages) });
       this.allConversions.pop();
     }
