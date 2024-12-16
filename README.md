@@ -1,6 +1,6 @@
 # pdf-to-image-generator
 
-Performant and lightweight Node.js library to convert PDF file/buffer pages to PNG or JPEG files/buffers without binary and OS dependencies\*. Designed with high focus on performance and developer experience.
+Performant and lightweight Node.js library to convert PDF file to images. Designed with high focus on performance and developer experience.
 
 | Test/Feature                   | pdf-to-image-generator | pdf-to-png-converter | pdf-to-img  |
 | ------------------------------ | ---------------------- | -------------------- | ----------- |
