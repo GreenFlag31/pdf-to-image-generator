@@ -27,7 +27,6 @@
     "start:dev": "tsc-watch --onSuccess \"node dist/test.js\""
   },
   "dependencies": {
-    "pdf-to-png-converter": "^3.6.3",
     "pdfjs-dist": "4.9.155"
   },
   "devDependencies": {

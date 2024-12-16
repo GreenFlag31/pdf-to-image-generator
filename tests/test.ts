@@ -28,18 +28,3 @@ async function convert() {
 }
 
 convert();
-
-// async function convert2() {
-//   const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
-//   const dir1 = 'upload/';
-
-//   await fsPromises.rm(dir1, { recursive: true, force: true });
-
-//   time('pdf-to-png-converter');
-//   await pdfToPng(filePath, {
-//     outputFolder: dir1,
-//     // pagesToProcess: toConvert,
-//     viewportScale: 2,
-//   });
-//   timeEnd('pdf-to-png-converter');
-// }
