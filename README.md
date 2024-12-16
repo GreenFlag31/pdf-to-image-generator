@@ -4,11 +4,12 @@ Performant and lightweight Node.js library to convert PDF file/buffer pages to P
 
 | Test/Feature                   | pdf-to-image-generator | pdf-to-png-converter | pdf-to-img  |
 | ------------------------------ | ---------------------- | -------------------- | ----------- |
-| 2-pages-pdf-with-forms         | 425ms                  | 88% slower           | 109% slower |
-| large-pdf-with-old-characters  | 16200ms                | 9% slower            | 12% slower  |
-| rich-pdf-with-images-form-text | 18600ms                | 2% slower            | 9% slower   |
-| streams support\*              | ✔️                     | ❌                   | ❌          |
+| 2-pages-pdf-with-forms         | 381ms                  | 91% slower           | 115% slower |
+| large-pdf-with-old-characters  | 13629ms                | 7% slower            | 31% slower  |
+| rich-pdf-with-images-form-text | 14658ms                | 3% slower            | 22% slower  |
+| streams support\*              | ❌                     | ❌                   | ❌          |
 | jpeg support                   | ✔️                     | ❌                   | ❌          |
+| webp support                   | ✔️                     | ❌                   | ❌          |
 | pausing flow                   | ✔️                     | ❌                   | ❌          |
 | resume flow                    | ✔️                     | ❌                   | ❌          |
 | stop flow                      | ✔️                     | ❌                   | ❌          |
@@ -17,7 +18,7 @@ Performant and lightweight Node.js library to convert PDF file/buffer pages to P
 | progression event              | ✔️                     | ❌                   | ❌          |
 | class based API\*\*            | ✔️                     | ❌                   | ❌          |
 
-\*_Not using streams means higher memory consumption, which can lead to a server crash if memory is exhausted (for example, with a certain number of simultaneous requests)._
+\*_Convertion of images using streams. Currently not supported due to a change in a pdfjs-dist dependency. Comes hopefully asap._
 
 \*\*_A class-based API offers more flexibility, allowing for reusable instances and caching, which improves efficiency across multiple conversion processes._
 
@@ -30,12 +31,6 @@ Installation:
 ```sh
 npm install pdf-to-image-generator
 ```
-
-### Prerequisites
-
-\*There are no prerequisites for Windows (tested on 10).
-
-For others OS, please refer to the [node canvas dependancies](https://www.npmjs.com/package/canvas)
 
 ## Documentation
 
@@ -118,6 +113,8 @@ V0.0.9: [MINOR] Bug path correction.
 V1.0.0: [MINOR] Performance improvement and adding child process documentation.
 
 V1.0.1: [MINOR] Bug correction, setting jpeg as default type, changing behavior if empty array of pages is passed (no action is taken) and adding tests.
+
+V1.0.2: [MINOR] Removing node canvas dependency, adapting options.
 
 ## Discover others libraries
 

@@ -1,5 +1,4 @@
-import { Canvas } from 'canvas';
-import { createReadStream, createWriteStream, promises as fsPromises, Stats } from 'node:fs';
+import { createReadStream, promises as fsPromises, Stats } from 'node:fs';
 import { parse, resolve } from 'node:path';
 import {
   TextContent,
@@ -8,14 +7,12 @@ import {
   PDFPageProxy,
 } from 'pdfjs-dist/types/src/display/api';
 import { ImagePageOutput, Text } from './types/image.page.output';
-import { OPTIONS_DEFAULTS } from './const';
-import { NodeCanvasFactory } from './node.canvas.factory';
 import { initPDFOptions, initConversionOptions } from './init.params';
-import { finished } from 'node:stream/promises';
 import { ImageType, PDFOptions, PDFToIMGOptions } from './types/pdf.to.image.options';
-import { Conversions, PendingConversions, Streams } from './types/all.conversions';
+import { Conversions, PendingConversions } from './types/all.conversions';
 import EventEmitter from 'node:events';
 import { Events } from './types/progress';
+import { CanvasFactory } from './node.canvas.factory';
 
 export class PDFToImage {
   private pdfDocument!: PDFDocumentProxy;
@@ -83,12 +80,7 @@ export class PDFToImage {
     return parse(this.file as string).name;
   }
 
-  private async readFile(file: string, disableStreams: boolean): Promise<Buffer> {
-    if (disableStreams) {
-      const pdf = await fsPromises.readFile(file);
-      return pdf;
-    }
-
+  private async readFile(file: string): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
       const stream = createReadStream(file);
@@ -224,17 +216,12 @@ export class PDFToImage {
     if (!this.isPaused || this.isStopped) return [];
 
     for (const conversion of this.allConversions) {
-      const { outputFolderName, disableStreams } = conversion;
+      const { outputFolderName, includeBufferContent } = conversion;
       await this.createOutputDirectory(outputFolderName);
+      await this.renderPagesSequentially(conversion);
 
-      const [images, streams] = await this.renderPagesSequentially(conversion);
-
-      if (this.shouldWaitForAllStreams(conversion)) {
-        await Promise.all(streams);
-      }
-      if (this.shouldWriteAsyncToAFile(outputFolderName, disableStreams)) {
-        await this.writeFile(images);
-      }
+      await this.writeFile(outputFolderName);
+      this.deleteBufferContentIfNotNeeded(includeBufferContent, outputFolderName);
     }
 
     for (let i = this.allConversions.length - 1; i >= 0; i--) {
@@ -265,30 +252,18 @@ export class PDFToImage {
     return this.eventEmitter.on(event, listener);
   }
 
-  private async renderPagesSequentially(
-    conversion: Conversions
-  ): Promise<[ImagePageOutput[], Promise<void>[]]> {
+  private async renderPagesSequentially(conversion: Conversions) {
     if (!this.pdfDocument) throw new Error('No document has been loaded.');
 
-    const images: ImagePageOutput[] = [];
-    const streams: Promise<void>[] = [];
     this.isPaused = false;
     this.isStopped = false;
 
-    const {
-      type,
-      outputFolderName,
-      viewportScale,
-      outputFileName,
-      disableStreams,
-      pdfPages,
-      includeBufferContent,
-    } = conversion;
+    const { type, outputFolderName, viewportScale, outputFileName, pdfPages } = conversion;
 
     const imageType = type as ImageType;
-    const shouldStream = this.shouldStream(disableStreams, outputFolderName);
     const pageName = this.setPageName(outputFileName);
     const documentName = this.getDocumentName();
+    const canvas = this.pdfDocument.canvasFactory as CanvasFactory;
 
     while (conversion.index < pdfPages.length && !this.isPaused && !this.isStopped) {
       const page = pdfPages[conversion.index];
@@ -297,7 +272,7 @@ export class PDFToImage {
       });
 
       const { width, height } = viewport;
-      const canvasAndContext = new NodeCanvasFactory().create(width, height);
+      const canvasAndContext = canvas.create(width, height);
       const renderContext = {
         canvasContext: canvasAndContext.context,
         viewport,
@@ -309,7 +284,6 @@ export class PDFToImage {
       const padStartedCurrentPage = currentPage.toString().padStart(3, '0');
       const mask = `${pageName}_${padStartedCurrentPage}.${imageType}`;
       const resolvedPathWithMask = resolve(outputFolderName || '', mask);
-      const shouldIncludeContent = includeBufferContent || !shouldStream;
 
       const imagePageOutput: ImagePageOutput = {
         pageIndex: currentPage,
@@ -317,30 +291,15 @@ export class PDFToImage {
         ...(outputFolderName ? { name: mask } : {}),
         ...(documentName ? { documentName } : {}),
         ...(outputFolderName ? { path: resolvedPathWithMask } : {}),
-        ...(shouldIncludeContent
-          ? {
-              content: canvasAndContext.canvas!.toBuffer(
-                // @ts-ignore
-                `image/${imageType}`,
-                imageType === 'png' ? conversion.PNG : conversion.JPEG
-              ),
-            }
-          : {}),
+        // +jpeg quality?
+        content: canvasAndContext.canvas.toBuffer(
+          // @ts-ignore
+          `image/${imageType}`
+        ),
       };
-
-      if (shouldStream) {
-        const stream = this.imageStream(
-          conversion,
-          imageType,
-          resolvedPathWithMask,
-          canvasAndContext.canvas!
-        );
-        streams.push(stream);
-      }
 
       page.cleanup();
       this.imagePagesOutput.push(imagePageOutput);
-      images.push(imagePageOutput);
       conversion.index += 1;
 
       this.eventEmitter.emit('progress', {
@@ -349,38 +308,20 @@ export class PDFToImage {
         progress: +((conversion.index / pdfPages.length) * 100).toFixed(0),
       });
     }
-
-    return [images, streams];
-  }
-
-  private imageStream(
-    options: Conversions,
-    imageType: ImageType,
-    resolvedPath: string,
-    canvas: Canvas
-  ) {
-    const { PNG, JPEG } = options;
-    const imageStream =
-      imageType === 'png' ? canvas.createPNGStream(PNG) : canvas.createJPEGStream(JPEG);
-    const streamDestination = createWriteStream(resolvedPath);
-    const finish = finished(imageStream.pipe(streamDestination));
-
-    return finish;
   }
 
   /**
    * Load the PDF with the options provided. Throws an error if the PDF load fails.
    * @param {string | Buffer} file The local path of your file or a Buffer
-   * @param {boolean} disableStreams Disable streams for PDF loading
    * @param {PDFOptions} options Options respecting the {@link PDFOptions} interface
    */
-  async load(file: string | Buffer, disableStreams = false, options?: PDFOptions) {
+  async load(file: string | Buffer, options?: PDFOptions) {
     const pdf = await import('pdfjs-dist/legacy/build/pdf.mjs');
     const isBuffer = Buffer.isBuffer(file);
     this.file = file;
 
     try {
-      const fileBuffer = isBuffer ? file : await this.readFile(file, disableStreams);
+      const fileBuffer = isBuffer ? file : await this.readFile(file);
 
       const docParams = initPDFOptions(fileBuffer, options);
       this.pdfDocument = await pdf.getDocument(docParams).promise;
@@ -392,7 +333,7 @@ export class PDFToImage {
   }
 
   /**
-   * Get total size of PNG or JPEG in Mb on disk.
+   * Get total size of images in Mb on disk.
    */
   async getTotalSizeOnDisk() {
     const BYTES_IN_MEGA_BYTES = 1_024_000;
@@ -424,14 +365,14 @@ export class PDFToImage {
   }
 
   /**
-   * Convert the PDF to PNG or JPEG according to the options provided.
+   * Convert the PDF to images according to the options provided.
    * @param {options} options Options respecting the {@link PDFToIMGOptions} interface. Duplicate page index will be removed. The whole document is taken into account if pages is undefined.
    */
   async convert(options: PDFToIMGOptions) {
     if (!this.pdfDocument) throw new Error('No document has been loaded.');
 
     const optionsInitialised = initConversionOptions(options);
-    const { outputFolderName, pages, disableStreams } = optionsInitialised;
+    const { outputFolderName, pages, includeBufferContent } = optionsInitialised;
 
     const pagesToResolve = this.populatePagesPromises(pages);
     const pdfPages = await Promise.all(pagesToResolve);
@@ -448,15 +389,10 @@ export class PDFToImage {
     if (this.isPaused || this.isStopped) return [];
 
     await this.createOutputDirectory(outputFolderName);
+    await this.renderPagesSequentially(conversion);
 
-    const [images, streams] = await this.renderPagesSequentially(conversion);
-
-    if (this.shouldWaitForAllStreams(conversion)) {
-      await Promise.all(streams);
-    }
-    if (this.shouldWriteAsyncToAFile(outputFolderName, disableStreams)) {
-      await this.writeFile(images);
-    }
+    await this.writeFile(outputFolderName);
+    this.deleteBufferContentIfNotNeeded(includeBufferContent, outputFolderName);
 
     // index get a +1 at end of renderPages
     if (conversion.index === pdfPages.length) {
@@ -464,29 +400,26 @@ export class PDFToImage {
       this.allConversions.pop();
     }
 
-    return images;
+    return this.imagePagesOutput;
   }
 
-  private shouldStream(disableStreams: boolean | undefined, outputFolderName: string | undefined) {
-    return !disableStreams && Boolean(outputFolderName);
-  }
-
-  private shouldWaitForAllStreams(streams: Streams) {
-    const { disableStreams, outputFolderName, waitForAllStreamsToComplete } = streams;
-    return this.shouldStream(disableStreams, outputFolderName) && waitForAllStreamsToComplete;
-  }
-
-  private shouldWriteAsyncToAFile(
-    outputFolderName: string | undefined,
-    disableStreams: boolean | undefined
+  private deleteBufferContentIfNotNeeded(
+    includeBufferContent: boolean | undefined,
+    outputFolderName: string | undefined
   ) {
-    return Boolean(disableStreams && outputFolderName);
+    // if no output dir, let buffer content
+    if (!outputFolderName) return;
+
+    for (const image of this.imagePagesOutput) {
+      if (!includeBufferContent) delete image.content;
+    }
   }
 
-  private async writeFile(rendered: ImagePageOutput[]) {
-    const pages: Promise<void>[] = [];
+  private async writeFile(outputFolderName: string | undefined) {
+    if (!outputFolderName) return;
 
-    for (const page of rendered) {
+    const pages: Promise<void>[] = [];
+    for (const page of this.imagePagesOutput) {
       const { path, content } = page;
       const file = fsPromises.writeFile(path!, content!);
 

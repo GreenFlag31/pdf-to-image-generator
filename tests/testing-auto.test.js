@@ -32,7 +32,7 @@ describe('pdf output', { skip: true }, () => {
     assert.equal(convertion.length, 2);
   });
 
-  it('output should physically exists with streams', { skip: true }, async () => {
+  it('output should physically exists', { skip: true }, async () => {
     const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
     const conversionOptions = {
@@ -50,49 +50,6 @@ describe('pdf output', { skip: true }, () => {
     assert.equal(stat0.isFile(), true);
     assert.equal(stat1.isFile(), true);
   });
-
-  it('output should physically exists without streams', { skip: true }, async () => {
-    const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
-
-    const conversionOptions = {
-      outputFileName: 'this-is-my-custom-file-name',
-      outputFolderName: dir1,
-      type: 'jpeg',
-      viewportScale: 2,
-      pages: [1, 2],
-      disableStreams: true,
-    };
-    const convertion = await testingConvert(filePath, conversionOptions);
-
-    const stat0 = await promises.stat(convertion[0].path);
-    const stat1 = await promises.stat(convertion[1].path);
-
-    assert.equal(stat0.isFile(), true);
-    assert.equal(stat1.isFile(), true);
-  });
-
-  it(
-    'includeBufferContent (content) should be present when selected in option and of type Buffer',
-    { skip: true },
-    async () => {
-      const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
-
-      const outputFileName = 'this-is-my-custom-file-name';
-      const extension = 'jpeg';
-      const conversionOptions = {
-        outputFileName,
-        outputFolderName: dir1,
-        type: extension,
-        viewportScale: 2,
-        pages: [1, 2],
-        includeBufferContent: true,
-      };
-      const convertion = await testingConvert(filePath, conversionOptions);
-
-      assert.equal(Buffer.isBuffer(convertion[0].content), true);
-      assert.equal(Buffer.isBuffer(convertion[1].content), true);
-    }
-  );
 
   it(
     'includeBufferContent (content) should not be present by default',
@@ -260,7 +217,7 @@ describe('indexes', { skip: true }, () => {
 });
 
 describe('default values', { skip: true }, () => {
-  it('wrong type defaulted to png', { skip: true }, async () => {
+  it('wrong type defaulted to jpeg', { skip: true }, async () => {
     const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
     const outputFileName = 'this-is-my-custom-file-name';

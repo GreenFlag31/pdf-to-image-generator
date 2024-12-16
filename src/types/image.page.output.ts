@@ -40,7 +40,7 @@ export interface ImagePageOutput {
    */
   documentName?: string;
   /**
-   * Buffer content of the image.
+   * Buffer content of the image. Including the content can make the object heavy.
    */
   content?: Buffer;
   /**

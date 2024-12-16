@@ -3,9 +3,11 @@ import { BASE_PROPERTIES, OPTIONS_DEFAULTS } from './const';
 import { PDFOptions, PDFToIMGOptions } from './types/pdf.to.image.options';
 
 export function initConversionOptions(options: PDFToIMGOptions): PDFToIMGOptions {
-  const possibleTypes = ['png', 'jpeg'];
-  const currentType = options.type;
-  options.type = !possibleTypes.includes(currentType || '') ? 'jpeg' : currentType;
+  const possibleTypes = ['png', 'jpeg', 'webp'];
+  const currentType = options.type ?? 'jpeg';
+  if (!possibleTypes.includes(currentType)) {
+    throw new Error(`Unsupported type ${currentType}`);
+  }
 
   return Object.freeze({
     ...OPTIONS_DEFAULTS,

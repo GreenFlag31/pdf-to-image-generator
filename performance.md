@@ -5,16 +5,14 @@ Converting pdf to images is a CPU intensive task, so performance has to be a cen
 ## Tips to improve converting speed
 
 - Utilize the JPEG format for faster image processing
-- Let streams, do not disable them (images has to be converted toBuffer() to be written on disk)
 - Select images you want to convert on basis of the text or other criteria
-- Set an appropriate resolution/quality that balances quality and performance
+- Set an appropriate resolution/quality that balances quality and performance (control `viewportScale`)
 - Avoid unnecessary buffer operations, as they can cause a performance hit (let `includeBufferContent` to false)
-- If you don't directly perform operations on images, set `waitForAllStreamsToComplete` to false (if streams are enabled)
-- Utilize child processes to offload CPU-heavy tasks (never block the main thread)
+- Utilize child processes (or worker thread) to offload CPU-heavy tasks (never block the main thread)
 
-## Child processes
+## Example with Child process
 
-Tests have been conducted to include the creation and usage of child processes directly in the library, but results were not completely satisfying. I would recommand to create child processes on your side. Worker threads do not work because node canvas do not support them. Child processes do not share the same memory between your thread and the child process.
+Tests have been conducted to include the creation and usage of child processes directly in the library, but results were not completely satisfying. I would recommand to create child processes on your side. Child processes do not share the same memory between your thread and the child process.
 
 ```javascript
 // basic route

@@ -12,9 +12,3 @@ export interface PendingConversions {
   total: number;
   documentName: string | undefined;
 }
-
-export interface Streams {
-  disableStreams?: boolean;
-  outputFolderName?: string;
-  waitForAllStreamsToComplete?: boolean;
-}
