@@ -38,9 +38,7 @@ export type PDFToIMGOptions = {
   pages?: number[];
   /**
    * Include the buffer content in the response, increase the response weight.
-   * Usefull if you want to render once more the images later.
-   * If streams are disabled, the content will be present in the response.
-   * Including buffer content will cause a performance hit.
+   * Set this option to true if you want to reuse the same pdf instance.
    * @defaultValue false
    */
   includeBufferContent?: boolean;

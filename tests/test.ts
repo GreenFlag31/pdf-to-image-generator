@@ -11,9 +11,16 @@ async function convert() {
   await fsPromises.rm(dir1, { recursive: true, force: true });
 
   const conversionOptions: PDFToIMGOptions = {
-    // outputFolderName: dir1,
+    outputFolderName: dir1,
     viewportScale: 2,
-    pages: [1, 2, 3, 4],
+    pages: [1],
+    // includeBufferContent: true,
+  };
+  const conversionOptions2: PDFToIMGOptions = {
+    outputFolderName: dir1,
+    viewportScale: 2,
+    pages: [12],
+    // includeBufferContent: true,
   };
 
   const pdf = await new PDFToImage().load(filePath);
@@ -21,9 +28,8 @@ async function convert() {
     log('Event emitted:', data);
   });
 
-  time('convert');
   const convertion = await pdf.convert(conversionOptions);
-  timeEnd('convert');
+  const convertion2 = await pdf.convert(conversionOptions2);
   log(convertion);
 }
 

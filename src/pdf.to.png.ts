@@ -13,6 +13,7 @@ import { Conversions, PendingConversions } from './types/all.conversions';
 import EventEmitter from 'node:events';
 import { Events } from './types/progress';
 import { CanvasFactory } from './node.canvas.factory';
+import assert from 'node:assert';
 
 export class PDFToImage {
   private pdfDocument!: PDFDocumentProxy;
@@ -264,6 +265,7 @@ export class PDFToImage {
     const pageName = this.setPageName(outputFileName);
     const documentName = this.getDocumentName();
     const canvas = this.pdfDocument.canvasFactory as CanvasFactory;
+    const images: ImagePageOutput[] = [];
 
     while (conversion.index < pdfPages.length && !this.isPaused && !this.isStopped) {
       const page = pdfPages[conversion.index];
@@ -300,6 +302,7 @@ export class PDFToImage {
 
       page.cleanup();
       this.imagePagesOutput.push(imagePageOutput);
+      images.push(imagePageOutput);
       conversion.index += 1;
 
       this.eventEmitter.emit('progress', {
@@ -308,6 +311,8 @@ export class PDFToImage {
         progress: +((conversion.index / pdfPages.length) * 100).toFixed(0),
       });
     }
+
+    return images;
   }
 
   /**
@@ -367,6 +372,7 @@ export class PDFToImage {
   /**
    * Convert the PDF to images according to the options provided.
    * @param {options} options Options respecting the {@link PDFToIMGOptions} interface. Duplicate page index will be removed. The whole document is taken into account if pages is undefined.
+   * Returns only the pages that have been converted.
    */
   async convert(options: PDFToIMGOptions) {
     if (!this.pdfDocument) throw new Error('No document has been loaded.');
@@ -389,7 +395,7 @@ export class PDFToImage {
     if (this.isPaused || this.isStopped) return [];
 
     await this.createOutputDirectory(outputFolderName);
-    await this.renderPagesSequentially(conversion);
+    const images = await this.renderPagesSequentially(conversion);
 
     await this.writeFile(outputFolderName);
     this.deleteBufferContentIfNotNeeded(includeBufferContent, outputFolderName);
@@ -400,7 +406,7 @@ export class PDFToImage {
       this.allConversions.pop();
     }
 
-    return this.imagePagesOutput;
+    return images;
   }
 
   private deleteBufferContentIfNotNeeded(
@@ -421,8 +427,12 @@ export class PDFToImage {
     const pages: Promise<void>[] = [];
     for (const page of this.imagePagesOutput) {
       const { path, content } = page;
-      const file = fsPromises.writeFile(path!, content!);
+      assert(
+        content,
+        "Content is not defined. Set the option 'includeBufferContent' to true. In case of multiple conversions of the same pdf, the buffer content need to be included."
+      );
 
+      const file = fsPromises.writeFile(path!, content);
       pages.push(file);
     }
 

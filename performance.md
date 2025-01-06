@@ -7,7 +7,6 @@ Converting pdf to images is a CPU intensive task, so performance has to be a cen
 - Utilize the JPEG format for faster image processing
 - Select images you want to convert on basis of the text or other criteria
 - Set an appropriate resolution/quality that balances quality and performance (control `viewportScale`)
-- Avoid unnecessary buffer operations, as they can cause a performance hit (let `includeBufferContent` to false)
 - Utilize child processes (or worker thread) to offload CPU-heavy tasks (never block the main thread)
 
 ## Example with Child process

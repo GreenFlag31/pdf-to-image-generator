@@ -116,6 +116,8 @@ V1.0.1: [MINOR] Bug correction, setting jpeg as default type, changing behavior 
 
 V1.0.2: [MINOR] Removing node canvas dependency, adapting options.
 
+V1.0.4: [MINOR] Improving DX for multiple conversions with option `includeBufferContent`.
+
 ## Discover others libraries
 
 All libraries are permanently supported. Discover them [here](https://www.npmjs.com/~greenflag31).
