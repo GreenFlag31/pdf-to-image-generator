@@ -8,8 +8,8 @@ const dir1 = 'upload/';
 
 async function testingConvert(filePath, options) {
   await promises.rm(dir1, { recursive: true, force: true });
-
   const pdf = await new PDFToImage.PDFToImage().load(filePath);
+
   return pdf.convert(options);
 }
 async function testingGetText(filePath, pages) {
@@ -17,8 +17,8 @@ async function testingGetText(filePath, pages) {
   return pdf.getTextContent(pages);
 }
 
-describe('pdf output', { skip: true }, () => {
-  it('should output two pages when two first pages are asked', { skip: true }, async () => {
+describe('pdf output', () => {
+  it('should output two pages when two first pages are asked', async () => {
     const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
     const conversionOptions = {
@@ -32,7 +32,7 @@ describe('pdf output', { skip: true }, () => {
     assert.equal(convertion.length, 2);
   });
 
-  it('output should physically exists', { skip: true }, async () => {
+  it('output should physically exists', async () => {
     const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
     const conversionOptions = {
@@ -51,30 +51,37 @@ describe('pdf output', { skip: true }, () => {
     assert.equal(stat1.isFile(), true);
   });
 
-  it(
-    'includeBufferContent (content) should not be present by default',
-    { skip: true },
-    async () => {
-      const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
+  it('no output should physically exists without outputFolderName', async () => {
+    const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
-      const outputFileName = 'this-is-my-custom-file-name';
-      const extension = 'jpeg';
-      const conversionOptions = {
-        outputFileName,
-        outputFolderName: dir1,
-        type: extension,
-        viewportScale: 2,
-        pages: [1],
-      };
-      const convertion = await testingConvert(filePath, conversionOptions);
+    const conversionOptions = {
+      pages: [1],
+    };
+    const convertion = await testingConvert(filePath, conversionOptions);
 
-      assert.equal(convertion[0].content, undefined);
-    }
-  );
+    assert.equal(convertion[0].path, undefined);
+  });
+
+  it('includeBufferContent (content) should not be present by default', async () => {
+    const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
+
+    const outputFileName = 'this-is-my-custom-file-name';
+    const extension = 'jpeg';
+    const conversionOptions = {
+      outputFileName,
+      outputFolderName: dir1,
+      type: extension,
+      viewportScale: 2,
+      pages: [1],
+    };
+    const convertion = await testingConvert(filePath, conversionOptions);
+
+    assert.equal(convertion[0].content, undefined);
+  });
 });
 
-describe('checking: fileName, extension, dirName', { skip: true }, () => {
-  it('fileName and jpeg extension should be correct', { skip: true }, async () => {
+describe('checking: fileName, extension, dirName', () => {
+  it('fileName and jpeg extension should be correct', async () => {
     const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
     const outputFileName = 'this-is-my-custom-file-name';
@@ -92,7 +99,7 @@ describe('checking: fileName, extension, dirName', { skip: true }, () => {
     assert.equal(convertion[1].path.endsWith(`${outputFileName}_002.${extension}`), true);
   });
 
-  it('fileName and png extension should be correct', { skip: true }, async () => {
+  it('fileName and png extension should be correct', async () => {
     const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
     const outputFileName = 'this-is-my-custom-file-name';
@@ -110,7 +117,7 @@ describe('checking: fileName, extension, dirName', { skip: true }, () => {
     assert.equal(convertion[1].path.endsWith(`${outputFileName}_002.${extension}`), true);
   });
 
-  it('extension should be jpeg by default', { skip: true }, async () => {
+  it('extension should be jpeg by default', async () => {
     const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
     const outputFileName = 'this-is-my-custom-file-name';
@@ -125,7 +132,7 @@ describe('checking: fileName, extension, dirName', { skip: true }, () => {
     assert.equal(convertion[0].path.endsWith('jpeg'), true);
   });
 
-  it('dirName should be correct', { skip: true }, async () => {
+  it('dirName should be correct', async () => {
     const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
     const outputFileName = 'this-is-my-custom-file-name';
@@ -145,8 +152,8 @@ describe('checking: fileName, extension, dirName', { skip: true }, () => {
   });
 });
 
-describe('indexes', { skip: true }, () => {
-  it('page index should be correct', { skip: true }, async () => {
+describe('indexes', () => {
+  it('page index should be correct', async () => {
     const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
     const outputFileName = 'this-is-my-custom-file-name';
@@ -164,7 +171,7 @@ describe('indexes', { skip: true }, () => {
     assert.equal(convertion[1].pageIndex, 11);
   });
 
-  it('out of bound index should not be taken into account', { skip: true }, async () => {
+  it('out of bound index should not be taken into account', async () => {
     const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
     const outputFileName = 'this-is-my-custom-file-name';
@@ -181,7 +188,7 @@ describe('indexes', { skip: true }, () => {
     assert.deepEqual(convertion, []);
   });
 
-  it('negative page should not be taken into account', { skip: true }, async () => {
+  it('negative page should not be taken into account', async () => {
     const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
     const outputFileName = 'this-is-my-custom-file-name';
@@ -198,7 +205,7 @@ describe('indexes', { skip: true }, () => {
     assert.equal(convertion.length, 2);
   });
 
-  it('empty array of pages should not transform pages', { skip: true }, async () => {
+  it('empty array of pages should not transform pages', async () => {
     const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
     const outputFileName = 'this-is-my-custom-file-name';
@@ -216,8 +223,8 @@ describe('indexes', { skip: true }, () => {
   });
 });
 
-describe('default values', { skip: true }, () => {
-  it('wrong type defaulted to jpeg', { skip: true }, async () => {
+describe('default values', () => {
+  it('should throw an error if invalid type is provided', async () => {
     const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
     const outputFileName = 'this-is-my-custom-file-name';
@@ -229,36 +236,32 @@ describe('default values', { skip: true }, () => {
       viewportScale: 2,
       pages: [1],
     };
-    const convertion = await testingConvert(filePath, conversionOptions);
-    assert.equal(convertion[0].path.endsWith('jpeg'), true);
+
+    await assert.rejects(testingConvert(filePath, conversionOptions));
   });
 });
 
-describe('others', { skip: true }, () => {
-  it(
-    'should be possible to write an image manually with generated buffer content',
-    { skip: true },
-    async () => {
-      const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
+describe('others', () => {
+  it('should be possible to write an image manually with generated buffer content', async () => {
+    const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
-      const conversionOptions = {
-        viewportScale: 2,
-        pages: [1],
-        includeBufferContent: true,
-      };
-      const convertion = await testingConvert(filePath, conversionOptions);
+    const conversionOptions = {
+      viewportScale: 2,
+      pages: [1],
+      includeBufferContent: true,
+    };
+    const convertion = await testingConvert(filePath, conversionOptions);
 
-      const endPath = path.join(__dirname, '../custom.jpeg');
-      await promises.writeFile(endPath, convertion[0].content);
+    const endPath = path.join(__dirname, '../custom.jpeg');
+    await promises.writeFile(endPath, convertion[0].content);
 
-      const stat = await promises.stat(endPath);
-      assert.equal(stat.isFile(), true);
-    }
-  );
+    const stat = await promises.stat(endPath);
+    assert.equal(stat.isFile(), true);
+  });
 });
 
-describe('text content', { skip: true }, () => {
-  it('page content should include text', { skip: true }, async () => {
+describe('text content', () => {
+  it('page content should include text', async () => {
     const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
     const pages = [1, 2];
 
@@ -266,7 +269,7 @@ describe('text content', { skip: true }, () => {
     assert.equal(text[0].text.toLowerCase().includes('les oiseaux des jardins'), true);
   });
 
-  it('name of the PDF file should be correct', { skip: true }, async () => {
+  it('name of the PDF file should be correct', async () => {
     const pdfName = 'rich-pdf-with-images-form-text.pdf';
     const filePath = path.join(__dirname, `../test-data/${pdfName}`);
     const pages = [1, 2];
@@ -276,8 +279,8 @@ describe('text content', { skip: true }, () => {
   });
 });
 
-describe('conversion flow: stop, pause, resume', { skip: true }, () => {
-  it('stop conversion should stop the conversion process', { skip: true }, async () => {
+describe('conversion flow: stop, pause, resume', () => {
+  it('stop conversion should stop the conversion process', async () => {
     await promises.rm(dir1, { recursive: true, force: true });
     const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
@@ -298,7 +301,7 @@ describe('conversion flow: stop, pause, resume', { skip: true }, () => {
     await pdf.convert(conversionOptions);
   });
 
-  it('pause conversion should pause the conversion process', { skip: true }, async () => {
+  it('pause conversion should pause the conversion process', async () => {
     await promises.rm(dir1, { recursive: true, force: true });
     const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
@@ -319,7 +322,7 @@ describe('conversion flow: stop, pause, resume', { skip: true }, () => {
     await pdf.convert(conversionOptions);
   });
 
-  it('resume conversion should resume the conversion process', { skip: true }, async () => {
+  it('resume conversion should resume the conversion process', async () => {
     await promises.rm(dir1, { recursive: true, force: true });
     const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
@@ -346,7 +349,7 @@ describe('conversion flow: stop, pause, resume', { skip: true }, () => {
 });
 
 describe('progression and end events', () => {
-  it('progression event should track the progression', { skip: true }, async () => {
+  it('progression event should track the progression', async () => {
     const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
 
     const pagesConverted = [];

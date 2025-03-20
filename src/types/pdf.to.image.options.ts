@@ -38,7 +38,7 @@ export type PDFToIMGOptions = {
   pages?: number[];
   /**
    * Include the buffer content in the response, increase the response weight.
-   * Set this option to true if you want to reuse the same pdf instance.
+   * Set this option to true if you want to reuse the Buffer content of the image.
    * @defaultValue false
    */
   includeBufferContent?: boolean;

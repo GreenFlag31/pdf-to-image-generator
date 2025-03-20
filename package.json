@@ -1,6 +1,6 @@
 {
   "name": "pdf-to-image-generator",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Performant and lightweight Node.js library to convert PDF file to images",
   "keywords": [
     "pdf",
@@ -27,7 +27,7 @@
     "start:dev": "tsc-watch --onSuccess \"node dist/test.js\""
   },
   "dependencies": {
-    "pdfjs-dist": "4.10.38"
+    "pdfjs-dist": "^5.0.375"
   },
   "devDependencies": {
     "@types/chai": "^4.3.12",

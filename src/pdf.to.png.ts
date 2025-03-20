@@ -14,6 +14,7 @@ import EventEmitter from 'node:events';
 import { Events } from './types/progress';
 import { CanvasFactory } from './node.canvas.factory';
 import assert from 'node:assert';
+import { log, time, timeEnd } from 'node:console';
 
 export class PDFToImage {
   private pdfDocument!: PDFDocumentProxy;
@@ -286,6 +287,10 @@ export class PDFToImage {
       const padStartedCurrentPage = currentPage.toString().padStart(3, '0');
       const mask = `${pageName}_${padStartedCurrentPage}.${imageType}`;
       const resolvedPathWithMask = resolve(outputFolderName || '', mask);
+      const content = await canvasAndContext.canvas.encode(
+        // @ts-ignore
+        imageType
+      );
 
       const imagePageOutput: ImagePageOutput = {
         pageIndex: currentPage,
@@ -294,10 +299,7 @@ export class PDFToImage {
         ...(documentName ? { documentName } : {}),
         ...(outputFolderName ? { path: resolvedPathWithMask } : {}),
         // +jpeg quality?
-        content: canvasAndContext.canvas.toBuffer(
-          // @ts-ignore
-          `image/${imageType}`
-        ),
+        content,
       };
 
       page.cleanup();
@@ -427,10 +429,7 @@ export class PDFToImage {
     const pages: Promise<void>[] = [];
     for (const page of this.imagePagesOutput) {
       const { path, content } = page;
-      assert(
-        content,
-        "Content is not defined. Set the option 'includeBufferContent' to true. In case of multiple conversions of the same pdf, the buffer content need to be included."
-      );
+      if (!content) continue; // already written (and thus destroyed)
 
       const file = fsPromises.writeFile(path!, content);
       pages.push(file);
