@@ -1,38 +1,31 @@
 import path from 'path';
-import { PDFToImage } from '../src/pdf.to.png';
-import { PDFToIMGOptions } from '../src/types/pdf.to.image.options';
-import { promises as fsPromises } from 'node:fs';
-import { log } from 'console';
+import { promises } from 'node:fs';
 import { time, timeEnd } from 'node:console';
+import { convertToImages } from '../src/pdf.to.png';
+import { ConversionOptions } from '../src/interfaces/pdf-to-images';
 
 async function convert() {
-  time('start');
+  // const res = splitPagesPerWorker([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  // log(res);
+  // return;
+
+  const mupdf = await import('mupdf');
   const dir1 = 'upload/';
   const filePath = path.join(__dirname, '../test-data/rich-pdf-with-images-form-text.pdf');
+  await promises.rm(dir1, { recursive: true, force: true });
+  await promises.mkdir(dir1, { recursive: true });
 
-  await fsPromises.rm(dir1, { recursive: true, force: true });
+  time('start');
 
-  const conversionOptions: PDFToIMGOptions = {
-    outputFolderName: dir1,
-    viewportScale: 4,
-    pages: [1, 2, 3, 4],
-    // includeBufferContent: true,
-  };
-  const conversionOptions2: PDFToIMGOptions = {
-    outputFolderName: dir1,
-    viewportScale: 2,
-    pages: [12],
-    // includeBufferContent: true,
+  const conversionsOptions: ConversionOptions = {
+    imageFolderName: dir1,
+    pages: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
   };
 
-  const pdf = await new PDFToImage().load(filePath);
-  pdf.on('progress', (data) => {
-    log('data:', data);
-  });
+  const conversion = await convertToImages(filePath, conversionsOptions);
 
-  const convertion = await pdf.convert(conversionOptions);
-  // const convertion2 = await pdf.convert(conversionOptions2);
   timeEnd('start');
+  process.exit(0);
 }
 
 convert();

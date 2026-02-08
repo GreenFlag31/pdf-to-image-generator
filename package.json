@@ -1,12 +1,12 @@
 {
   "name": "pdf-to-image-generator",
   "version": "1.0.5",
-  "description": "Performant and lightweight Node.js library to convert PDF file to images",
+  "description": "Performant and lightweight Node.js library to convert PDF file to images. Supports PNG, JPEG, and WEBP output formats.",
   "keywords": [
-    "pdf",
+    "pdf to image nodejs",
+    "pdf to image",
     "pdf to png",
     "pdf to jpeg",
-    "pdf to image",
     "pdf file to image",
     "pdf buffer to image"
   ],
@@ -27,22 +27,18 @@
     "start:dev": "tsc-watch --onSuccess \"node dist/test.js\""
   },
   "dependencies": {
-    "pdfjs-dist": "^5.0.375"
+    "mupdf": "^1.27.0",
+    "pdfjs-dist": "5.4.530"
   },
   "devDependencies": {
-    "@types/chai": "^4.3.12",
-    "@types/mocha": "^10.0.6",
-    "@types/node": "^20.11.27",
-    "@typescript-eslint/eslint-plugin": "^7.2.0",
-    "chai": "^4.4.1",
-    "chai-as-promised": "^7.1.1",
-    "mocha": "^10.3.0",
-    "rimraf": "^6.0.1",
-    "ts-node": "^10.9.2",
-    "tsc-watch": "^6.2.0",
-    "typedoc": "^0.27.5",
-    "typedoc-github-theme": "^0.2.0",
-    "typescript": "^5.4.2"
+    "@types/node": "25.1.0",
+    "rimraf": "6.0.1",
+    "ts-node": "10.9.2",
+    "tsc-watch": "6.2.0",
+    "tsx": "^4.21.0",
+    "typedoc": "0.27.5",
+    "typedoc-github-theme": "0.2.0",
+    "typescript": "5.4.2"
   },
   "engines": {
     "node": ">=20.16"
