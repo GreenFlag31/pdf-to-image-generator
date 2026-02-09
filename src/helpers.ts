@@ -110,17 +110,14 @@ async function handleConversion(
   log: LogLevel | undefined,
 ): Promise<ImageOutput[]> {
   const { maxWorkerThreads, useWorkerThread } = configuration;
+  const { pages, minPagesPerWorker, workerStrategy } = convertData;
 
   if (!useWorkerThread) {
-    if (log === 'debug') {
-      logger(log, 'Running conversion without worker threads');
-    }
+    logger(log, 'debug', 'Running conversion without worker threads');
 
     const pagesConverted = await convertPages(convertData as ConvertPageDataWithDocumentRequired);
     return pagesConverted;
   }
-
-  const { pages, minPagesPerWorker, workerStrategy } = convertData;
 
   const { workerCount, chunks: pagesPerWorkers } = splitPagesPerWorker(
     pages,
@@ -128,15 +125,8 @@ async function handleConversion(
     minPagesPerWorker,
   );
 
-  if (log === 'debug') {
-    const workerPagesInfo =
-      workerStrategy === 'static'
-        ? `with ${pagesPerWorkers.map((pages) => `${pages.length} page(s)`).join(', ')} each`
-        : '';
-
-    logger(log, `Running conversion using ${workerCount} worker threads ${workerPagesInfo}`);
-    logger(log, `Worker strategy: ${workerStrategy}`);
-  }
+  logger(log, 'debug', `Running conversion using ${workerCount} worker threads`);
+  logger(log, 'debug', `Worker strategy: ${workerStrategy}`);
 
   if (workerStrategy === 'dynamic') {
     const dynamicWorkerResults = await dynamicWorkersHandler(workerCount, convertData, log);
@@ -144,19 +134,9 @@ async function handleConversion(
     return dynamicWorkerResults;
   }
 
-  const workers: Promise<ImageOutput[]>[] = [];
-  for (const pagesPerWorker of pagesPerWorkers) {
-    const workerConvertData: ConvertPageData = {
-      ...convertData,
-      pages: pagesPerWorker,
-    };
+  const workersResults = await workersHandler(convertData, pagesPerWorkers, log);
 
-    const worker = workersHandler(workerConvertData);
-    workers.push(worker);
-  }
-
-  const workersResults = await Promise.all(workers);
-  return workersResults.flat();
+  return workersResults;
 }
 
 /**
@@ -193,6 +173,7 @@ function getPagesToBeConverted(pages: number[], totalPdfPages: number) {
     if (page < 0 || page >= totalPdfPages) {
       logger(
         'warn',
+        'warn',
         `Page number ${page} is out of bounds. It should be between 0 and ${totalPdfPages - 1}. This page has been skipped.`,
       );
       continue;
@@ -204,8 +185,13 @@ function getPagesToBeConverted(pages: number[], totalPdfPages: number) {
   return [...new Set(pagesToConvert)];
 }
 
-function logger(level: LogLevel, message: string, meta?: unknown) {
-  if (!message) return;
+function logger(
+  currentLevel: LogLevel | undefined,
+  level: LogLevel,
+  message: string,
+  meta?: unknown,
+) {
+  if (currentLevel !== level || !message) return;
 
   const color = {
     debug: '\x1b[90m',
@@ -243,6 +229,7 @@ function authenticateWithPassword(
   if (needAuth && !password) {
     logger(
       'error',
+      'error',
       'The PDF document is password-protected. Please provide a password to open it.',
     );
     return false;
@@ -253,15 +240,16 @@ function authenticateWithPassword(
   const auth = document.authenticatePassword(password);
 
   if (auth === 0) {
-    logger('error', 'Password is incorrect. Unable to open the PDF document');
+    logger('error', 'error', 'Password is incorrect. Unable to open the PDF document');
     return false;
   }
 
   if (auth === 1) {
-    if (log === 'warn') logger('warn', 'No password is required to open the PDF document');
+    logger(log, 'warn', 'No password is required to open the PDF document');
+
     return true;
   } else if (auth === 2 || auth === 4) {
-    if (log === 'info') logger('info', 'Password is correct');
+    logger(log, 'info', 'Password is correct');
     return true;
   }
 

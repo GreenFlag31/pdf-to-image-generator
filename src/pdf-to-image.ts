@@ -39,7 +39,7 @@ async function convertToImages(file: MuPDFType, options: ConversionOptions) {
   const pdf = mupdf.Document.openDocument(file);
 
   if (!pdf.isPDF()) {
-    logger('error', 'The provided file is not a valid PDF document');
+    logger('error', 'error', 'The provided file is not a valid PDF document');
     return [];
   }
 
@@ -68,6 +68,7 @@ async function convertToImages(file: MuPDFType, options: ConversionOptions) {
     scale,
     colorSpace,
     minPagesPerWorker,
+    // reuse the document if not using worker threads
     document: useWorkerThread ? null : pdf,
     workerStrategy,
   };
@@ -84,11 +85,9 @@ async function convertToImages(file: MuPDFType, options: ConversionOptions) {
   const endTime = process.hrtime.bigint();
   const durationMs = Number(endTime - startTime) / 1_000_000;
 
-  if (log === 'info') {
-    logger('info', `Pages converted (${pagesToConvert.length}): ${pagesToConvert.join(', ')}`);
-    logger('info', `${imageFolderName ? `Images rendered at: ${imageFolderName}` : ''} `);
-    logger('info', `Conversion finished in ${durationMs.toFixed(2)} ms`);
-  }
+  logger(log, 'info', `Pages converted (${pagesToConvert.length}): ${pagesToConvert.join(', ')}`);
+  logger(log, 'info', `${imageFolderName ? `Images rendered at: ${imageFolderName}` : ''} `);
+  logger(log, 'info', `Conversion finished in ${durationMs.toFixed(2)} ms`);
 
   return workersResults;
 }

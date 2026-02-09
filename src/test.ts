@@ -6,18 +6,16 @@ import { log } from 'node:console';
 
 async function convert() {
   const dir1 = 'upload/';
-  const filePath = path.join(__dirname, '../test-data/2-pages-pdf-with-forms.pdf');
+  const filePath = path.join(__dirname, '../test-data/large_pdf.pdf');
   await promises.rm(dir1, { recursive: true, force: true });
   await promises.mkdir(dir1, { recursive: true });
 
   const conversionsOptions: ConversionOptions = {
     imageFolderName: dir1,
-    // pages: [0, 1, 2, 3, 4, 5],
-    log: 'info',
+    pages: [0, 1, 2, 3, 4, 5],
+    log: 'debug',
     useWorkerThread: true,
-    // workerStrategy: 'dynamic',
-
-    // minPagesPerWorker: 5,
+    workerStrategy: 'dynamic',
   };
 
   const conversion = await convertToImages(filePath, conversionsOptions);

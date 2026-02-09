@@ -129,7 +129,7 @@ export type ConversionOptions = {
    */
   workerStrategy?: 'static' | 'dynamic';
   /**
-   * Max number of threads to use if useWorkerThread is enabled.
+   * Max number of worker threads to use.
    * @defaultValue number of CPU cores available - 1 (minimum 1)
    */
   maxWorkerThreads?: number;
@@ -140,14 +140,13 @@ export type ConversionOptions = {
    */
   minPagesPerWorker?: number;
   /**
-   * Include the buffer content in the response, increase the response weight.
-   * Set this option to true if you want to reuse the Buffer content of the image.
+   * Include the buffer content of the image in the response.
    * @defaultValue false
    */
   includeBufferContent?: boolean;
   /**
-   * Log info.
-   * @defaultValue false
+   * Log level.
+   * @defaultValue undefined
    */
   log?: LogLevel;
 };
@@ -161,7 +160,7 @@ export interface MsgToWorker {
   type: string;
 }
 
-export interface MsgToParent {
+export interface MsgToParentDynamicWorker {
   type: string;
   data: ImageOutput;
 }

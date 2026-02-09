@@ -1,5 +1,5 @@
 import { Worker } from 'worker_threads';
-import { ConvertPageData, ImageOutput, LogLevel, MsgToParent } from '../interfaces';
+import { ConvertPageData, ImageOutput, LogLevel, MsgToParentDynamicWorker } from '../interfaces';
 import path from 'path';
 import { logger } from '../helpers';
 
@@ -20,17 +20,17 @@ function dynamicWorkersHandler(
       const worker = new Worker(workerPath);
       activeWorkers++;
 
-      worker.on('message', (msg: MsgToParent) => {
+      worker.on('message', (msg: MsgToParentDynamicWorker) => {
         if (msg.type === 'ready') {
           if (nextPageIndex < pages.length) {
             const page = pages[nextPageIndex++];
-            if (log === 'debug') {
-              logger('debug', `Worker ${worker.threadId} is processing page ${page}`);
-            }
+
+            logger(log, 'debug', `Worker ${worker.threadId} is processing page ${page}`);
 
             const toConvert: ConvertPageData = { ...convertData, pages: [page] };
             worker.postMessage({ type: 'page', convertData: toConvert });
           } else {
+            logger(log, 'debug', `Worker ${worker.threadId} has finished`);
             worker.postMessage({ type: 'end' });
           }
         }
@@ -41,6 +41,7 @@ function dynamicWorkersHandler(
 
         if (msg.type === 'exit') {
           activeWorkers--;
+
           if (activeWorkers === 0) {
             resolve(results);
           }

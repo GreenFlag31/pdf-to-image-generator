@@ -24,6 +24,5 @@ parentPort!.on('message', async (data: MsgAndConvertData) => {
   if (type === 'end') {
     parentPort!.postMessage({ type: 'exit' });
     documentCache.destroy();
-    process.exit(0);
   }
 });
