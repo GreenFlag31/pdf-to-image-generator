@@ -45,7 +45,6 @@ async function convertPages(convertData: ConvertPageDataWithDocumentRequired) {
 
   for (const index of pages) {
     const page = document.loadPage(index);
-
     const pixmap = page.toPixmap(muScale, muColorSpace);
     const image = pixmap.asPNG();
 
@@ -59,10 +58,11 @@ async function convertPages(convertData: ConvertPageDataWithDocumentRequired) {
       content: image,
     };
 
-    const imageOutput = getNewImageOutput(imageData);
+    const imageOutput = getImageOutput(imageData);
     imagesOutputs.push(imageOutput);
 
     await writeFile(imageOutput.path, image);
+    pixmap.destroy();
     page.destroy();
   }
 
@@ -75,10 +75,7 @@ async function writeFile(imageMask: string | null, pngImage: Uint8Array) {
   await promises.writeFile(imageMask, pngImage);
 }
 
-/**
- * If outputFolderName is provided, the image will be written on disk.
- */
-function getNewImageOutput(imageData: ImageData) {
+function getImageOutput(imageData: ImageData) {
   const { page, type, pageName, includeBufferContent, padNumber, imageFolderName, content } =
     imageData;
 

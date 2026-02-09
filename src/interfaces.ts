@@ -29,7 +29,7 @@ export interface ImageOutput {
    */
   path: string | null;
   /**
-   * Buffer content of the image. Including the content can make the object heavy.
+   * Buffer content of the image. Including the content can make the object heavy. Content is automatically included if `imageFolderName` option is not provided.
    */
   content: Uint8Array | null;
 }
@@ -154,10 +154,6 @@ export type ConversionOptions = {
 export interface MsgAndConvertData {
   type: string;
   convertData: ConvertPageData;
-}
-
-export interface MsgToWorker {
-  type: string;
 }
 
 export interface MsgToParentDynamicWorker {

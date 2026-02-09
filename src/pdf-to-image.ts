@@ -12,9 +12,16 @@ import {
   logger,
   prepareConversion,
 } from './helpers';
+import { ImageOutput } from './interfaces';
 import path from 'node:path';
 import os from 'os';
 
+/**
+ * Convert a PDF file to images.
+ * @param file Provide a PDF file of type {@link MuPDFType}
+ * @param options Conversion options
+ * @returns An array of converted images {@link ImageOutput}
+ */
 async function convertToImages(file: MuPDFType, options: ConversionOptions) {
   const mupdf = await import('mupdf');
 
@@ -30,8 +37,8 @@ async function convertToImages(file: MuPDFType, options: ConversionOptions) {
     useWorkerThread = false,
     maxWorkerThreads = Math.max(os.cpus().length - 1, 1),
     minPagesPerWorker = 2,
-    log,
     workerStrategy = 'static',
+    log,
   } = options;
 
   await createOutputDirectory(imageFolderName);
@@ -89,6 +96,7 @@ async function convertToImages(file: MuPDFType, options: ConversionOptions) {
   logger(log, 'info', `${imageFolderName ? `Images rendered at: ${imageFolderName}` : ''} `);
   logger(log, 'info', `Conversion finished in ${durationMs.toFixed(2)} ms`);
 
+  pdf.destroy();
   return workersResults;
 }
 

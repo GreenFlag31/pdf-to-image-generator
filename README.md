@@ -2,7 +2,7 @@
 
 Performant and lightweight Node.js library to convert PDF file to images. Designed with high focus on performance and developer experience.
 
-_From the V2.0.0, this library has been rewritten. For the previous versions, visit this [link]()_
+_From the V2.0.0, this library has been rewritten. For the previous versions, visit this [link](https://github.com/GreenFlag31/pdf-to-image-generator/blob/main/OLD-README.md)_
 
 ## Getting started
 

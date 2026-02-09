@@ -2,7 +2,6 @@ import path from 'path';
 import { promises } from 'node:fs';
 import { convertToImages } from './pdf-to-image';
 import { ConversionOptions } from './interfaces';
-import { log } from 'node:console';
 
 async function convert() {
   const dir1 = 'upload/';
@@ -13,7 +12,7 @@ async function convert() {
   const conversionsOptions: ConversionOptions = {
     imageFolderName: dir1,
     pages: [0, 1, 2, 3, 4, 5],
-    log: 'debug',
+    log: 'info',
     useWorkerThread: true,
     workerStrategy: 'dynamic',
   };
