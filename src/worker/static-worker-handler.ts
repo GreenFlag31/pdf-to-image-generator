@@ -34,6 +34,7 @@ function workersHandler(
       worker.on('message', (imagesData: ImageOutput[]) => {
         activeWorkers--;
         results.push(...imagesData);
+        worker.terminate();
 
         logger(log, 'debug', `Worker ${worker.threadId} has finished processing pages`);
 
@@ -44,6 +45,7 @@ function workersHandler(
 
       worker.on('error', (err: any) => {
         logger(log, 'error', `Worker error: ${err.message}`);
+        worker.terminate();
         reject(err);
       });
     }

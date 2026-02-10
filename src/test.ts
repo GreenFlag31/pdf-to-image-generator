@@ -12,9 +12,10 @@ async function convert() {
   const conversionsOptions: ConversionOptions = {
     imageFolderName: dir1,
     pages: [0, 1, 2, 3, 4, 5],
-    log: 'info',
-    useWorkerThread: true,
+    log: 'debug',
+    useWorkerThreads: true,
     workerStrategy: 'dynamic',
+    workerActionOnFailure: 'nextPage',
   };
 
   const conversion = await convertToImages(filePath, conversionsOptions);

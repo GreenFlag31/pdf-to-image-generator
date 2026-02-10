@@ -9,9 +9,10 @@ import {
   WorkerConfiguration,
   LogLevel,
   ConvertPageDataWithDocumentRequired,
+  ImageType,
 } from './interfaces';
 // @ts-ignore
-import { Document } from 'mupdf';
+import { Document, Pixmap } from 'mupdf';
 import { dynamicWorkersHandler } from './worker/dynamic-worker-handler';
 
 function prepareConversion(commonConversionData: CommonConversionData) {
@@ -46,7 +47,7 @@ async function convertPages(convertData: ConvertPageDataWithDocumentRequired) {
   for (const index of pages) {
     const page = document.loadPage(index);
     const pixmap = page.toPixmap(muScale, muColorSpace);
-    const image = pixmap.asPNG();
+    const image = getImageAccordingToType(pixmap, type);
 
     const imageData: ImageData = {
       page: index,
@@ -61,12 +62,20 @@ async function convertPages(convertData: ConvertPageDataWithDocumentRequired) {
     const imageOutput = getImageOutput(imageData);
     imagesOutputs.push(imageOutput);
 
-    await writeFile(imageOutput.path, image);
     pixmap.destroy();
     page.destroy();
+    await writeFile(imageOutput.path, image);
   }
 
   return imagesOutputs;
+}
+
+function getImageAccordingToType(pixmap: Pixmap, type: ImageType) {
+  if (type === 'jpeg') return pixmap.asJPEG(80);
+  if (type === 'pam') return pixmap.asPAM();
+  if (type === 'psd') return pixmap.asPSD();
+
+  return pixmap.asPNG();
 }
 
 async function writeFile(imageMask: string | null, pngImage: Uint8Array) {
@@ -96,9 +105,8 @@ function getImageOutput(imageData: ImageData) {
 
 function getPageName(fileName: string | null, imageFileName?: string) {
   if (imageFileName) return imageFileName;
-  if (!fileName) return '';
 
-  return fileName;
+  return fileName ?? '';
 }
 
 async function handleConversion(
@@ -106,17 +114,17 @@ async function handleConversion(
   configuration: WorkerConfiguration,
   log: LogLevel | undefined,
 ): Promise<ImageOutput[]> {
-  const { maxWorkerThreads, useWorkerThread } = configuration;
+  const { maxWorkerThreads, useWorkerThreads } = configuration;
   const { pages, minPagesPerWorker, workerStrategy } = convertData;
 
-  if (!useWorkerThread) {
+  if (!useWorkerThreads) {
     logger(log, 'debug', 'Running conversion without worker threads');
 
     const pagesConverted = await convertPages(convertData as ConvertPageDataWithDocumentRequired);
     return pagesConverted;
   }
 
-  const { workerCount, chunks: pagesPerWorkers } = splitPagesPerWorker(
+  const { workerCount, pagesPerWorkers } = splitPagesPerWorker(
     pages,
     maxWorkerThreads,
     minPagesPerWorker,
@@ -139,24 +147,17 @@ async function handleConversion(
 /**
  * Split pages to convert into chunks for each worker.
  */
-function splitPagesPerWorker(
-  pagesToConvert: number[],
-  maxWorkerThreads: number,
-  minPagesPerWorker: number,
-) {
-  const workerCount = Math.min(
-    maxWorkerThreads,
-    Math.ceil(pagesToConvert.length / minPagesPerWorker),
-  );
+function splitPagesPerWorker(pages: number[], maxWorkerThreads: number, minPagesPerWorker: number) {
+  const workerCount = Math.min(maxWorkerThreads, Math.ceil(pages.length / minPagesPerWorker));
 
-  const chunks: number[][] = Array.from({ length: workerCount }, () => []);
+  const pagesPerWorkers: number[][] = Array.from({ length: workerCount }, () => []);
 
-  for (let i = 0; i < pagesToConvert.length; i++) {
-    const page = pagesToConvert[i];
-    chunks[i % workerCount].push(page);
+  for (let i = 0; i < pages.length; i++) {
+    const page = pages[i];
+    pagesPerWorkers[i % workerCount].push(page);
   }
 
-  return { workerCount, chunks };
+  return { workerCount, pagesPerWorkers };
 }
 
 function getPagesToBeConverted(pages: number[], totalPdfPages: number) {
@@ -216,6 +217,10 @@ function countPadForImageNameOnDisk(value: number) {
   return Math.floor(Math.log10(value - 1)) + 1;
 }
 
+function differentialToTwoDigits(end: number, start: number) {
+  return (end - start).toFixed(2);
+}
+
 function authenticateWithPassword(
   document: Document,
   password: string | undefined,
@@ -265,4 +270,5 @@ export {
   countPadForImageNameOnDisk,
   createOutputDirectory,
   authenticateWithPassword,
+  differentialToTwoDigits,
 };

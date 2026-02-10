@@ -1,5 +1,5 @@
 import { parentPort } from 'node:worker_threads';
-import { convertPages } from '../helpers';
+import { convertPages, logger } from '../helpers';
 import { MsgAndConvertData } from '../interfaces';
 // @ts-ignore
 import { Document } from 'mupdf';
@@ -15,14 +15,23 @@ parentPort!.on('message', async (data: MsgAndConvertData) => {
     documentCache = mupdf.Document.openDocument(convertData.file);
   }
 
-  if (type === 'page') {
-    const image = await convertPages({ ...convertData, document: documentCache });
-    parentPort!.postMessage({ type: 'result', data: image });
-    parentPort!.postMessage({ type: 'ready' });
-  }
+  try {
+    if (type === 'page') {
+      if (convertData.pages.includes(3)) {
+        throw new Error('Test error on page 3');
+      }
 
-  if (type === 'end') {
-    parentPort!.postMessage({ type: 'exit' });
-    documentCache.destroy();
+      const images = await convertPages({ ...convertData, document: documentCache });
+      parentPort!.postMessage({ type: 'result', data: images[0] });
+      parentPort!.postMessage({ type: 'ready' });
+    }
+
+    if (type === 'end') {
+      documentCache.destroy();
+      parentPort!.postMessage({ type: 'exit' });
+    }
+  } catch (error: any) {
+    const errorInstance = error instanceof Error ? error : new Error(error);
+    parentPort!.postMessage({ type: 'error', data: errorInstance });
   }
 });

@@ -1,5 +1,6 @@
 // @ts-ignore
 import { Stream, Document } from 'mupdf';
+import { Worker } from 'worker_threads';
 
 export interface ImageData {
   page: number;
@@ -59,6 +60,7 @@ export interface ConvertPageData {
   minPagesPerWorker: number;
   document: Document | null;
   workerStrategy: WorkerStrategy;
+  workerActionOnFailure: WorkerFailureAction;
 }
 
 export interface ConvertPageDataWithDocumentRequired extends ConvertPageData {
@@ -66,7 +68,7 @@ export interface ConvertPageDataWithDocumentRequired extends ConvertPageData {
 }
 
 export interface WorkerConfiguration {
-  useWorkerThread: boolean;
+  useWorkerThreads: boolean;
   maxWorkerThreads: number;
 }
 
@@ -121,7 +123,7 @@ export type ConversionOptions = {
    * Use worker thread to perform the conversion in separate threads.
    * @defaultValue false
    */
-  useWorkerThread?: boolean;
+  useWorkerThreads?: boolean;
   /**
    * Worker scheduling strategy.
    * Dynamic strategy can be more efficient for heterogeneous PDFs.
@@ -133,6 +135,11 @@ export type ConversionOptions = {
    * @defaultValue number of CPU cores available - 1 (minimum 1)
    */
   maxWorkerThreads?: number;
+  /**
+   * Action to perform when a worker thread fails to convert a page. `retry` will only be performed once.
+   * @defaultValue 'abort'
+   */
+  workerActionOnFailure?: WorkerFailureAction;
   /**
    * Minimum number of pages to convert per worker thread.
    * Increasing this value if the PDF is very large can reduce the time to complete the conversion.
@@ -151,12 +158,33 @@ export type ConversionOptions = {
   log?: LogLevel;
 };
 
+export type WorkerFailureAction = 'retry' | 'nextPage' | 'abort';
+
 export interface MsgAndConvertData {
   type: string;
   convertData: ConvertPageData;
 }
 
 export interface MsgToParentDynamicWorker {
-  type: string;
-  data: ImageOutput;
+  type: MsgType;
+  data: ImageOutput | Error;
 }
+
+export type MsgType = 'ready' | 'result' | 'error' | 'exit';
+
+export interface WorkerProcessTime {
+  page: number;
+  start: number;
+}
+
+export interface WorkerReadyState {
+  worker: Worker;
+  convertData: ConvertPageData;
+  log: LogLevel | undefined;
+  nextPageIndex: number;
+  pages: number[];
+  threadId: number;
+  currentWorkerProcessTime: WorkerProcessTime[];
+}
+
+export type WorkerProcessTimeMap = Map<number, WorkerProcessTime[]>;

@@ -1,7 +1,14 @@
 import { Worker } from 'worker_threads';
-import { ConvertPageData, ImageOutput, LogLevel, MsgToParentDynamicWorker } from '../interfaces';
+import {
+  ConvertPageData,
+  ImageOutput,
+  LogLevel,
+  MsgToParentDynamicWorker,
+  WorkerProcessTime,
+  WorkerReadyState,
+} from '../interfaces';
 import path from 'path';
-import { logger } from '../helpers';
+import { differentialToTwoDigits, logger } from '../helpers';
 
 function dynamicWorkersHandler(
   workerCount: number,
@@ -12,35 +19,83 @@ function dynamicWorkersHandler(
     const results: ImageOutput[] = [];
     const workerPath = path.join(__dirname, './dynamic-worker.js');
 
-    const { pages } = convertData;
+    const { pages, workerActionOnFailure } = convertData;
     let nextPageIndex = 0;
     let activeWorkers = 0;
 
     for (let i = 0; i < workerCount; i++) {
       const worker = new Worker(workerPath);
+      const { threadId } = worker;
+      const workerProcessTime = new Map<number, WorkerProcessTime[]>();
+      workerProcessTime.set(threadId, []);
+      let hasRetried = false;
       activeWorkers++;
 
       worker.on('message', (msg: MsgToParentDynamicWorker) => {
-        if (msg.type === 'ready') {
-          if (nextPageIndex < pages.length) {
-            const page = pages[nextPageIndex++];
+        const { type, data } = msg;
+        const currentWorkerProcessTime = workerProcessTime.get(threadId)!;
+        const workerLastPageAndTime = currentWorkerProcessTime.at(-1)!;
+        const workerReadyState: WorkerReadyState = {
+          worker,
+          convertData,
+          log,
+          nextPageIndex,
+          pages,
+          currentWorkerProcessTime,
+          threadId,
+        };
 
-            logger(log, 'debug', `Worker ${worker.threadId} is processing page ${page}`);
+        if (type === 'ready') {
+          handleWorkerReadyState(workerReadyState);
+          nextPageIndex++;
+        }
 
-            const toConvert: ConvertPageData = { ...convertData, pages: [page] };
+        if (type === 'result') {
+          logger(
+            log,
+            'debug',
+            `Worker ${threadId} has processed page ${(data as ImageOutput).page} in ${differentialToTwoDigits(performance.now(), workerLastPageAndTime.start)} ms`,
+          );
+
+          results.push(data as ImageOutput);
+        }
+
+        if (type === 'error') {
+          if (hasRetried || workerActionOnFailure === 'abort') {
+            logger(log, 'error', `Worker ${threadId} has crashed`);
+            throw data as Error;
+          }
+
+          if (workerActionOnFailure === 'retry') {
+            const toConvert: ConvertPageData = {
+              ...convertData,
+              pages: [workerLastPageAndTime.page],
+            };
+
+            logger(
+              log,
+              'debug',
+              `Worker ${threadId} has encountered an error and is retrying page ${workerLastPageAndTime.page}`,
+            );
             worker.postMessage({ type: 'page', convertData: toConvert });
-          } else {
-            logger(log, 'debug', `Worker ${worker.threadId} has finished`);
-            worker.postMessage({ type: 'end' });
+            hasRetried = true;
+          }
+
+          if (workerActionOnFailure === 'nextPage') {
+            logger(
+              log,
+              'debug',
+              `Worker ${threadId} has encountered an error and is skipping page ${workerLastPageAndTime.page}`,
+            );
+
+            handleWorkerReadyState(workerReadyState);
+            nextPageIndex++;
           }
         }
 
-        if (msg.type === 'result') {
-          results.push(msg.data);
-        }
-
-        if (msg.type === 'exit') {
+        if (type === 'exit') {
           activeWorkers--;
+          worker.terminate();
 
           if (activeWorkers === 0) {
             resolve(results);
@@ -48,9 +103,33 @@ function dynamicWorkersHandler(
         }
       });
 
-      worker.on('error', reject);
+      worker.on('error', (err: any) => {
+        logger(log, 'error', `Worker error: ${err.message}`);
+        worker.terminate();
+        reject(err);
+      });
     }
   });
+}
+
+/**
+ * Ready to take next page or finish.
+ */
+function handleWorkerReadyState(workerReadyState: WorkerReadyState) {
+  const { worker, convertData, log, nextPageIndex, pages, currentWorkerProcessTime, threadId } =
+    workerReadyState;
+
+  if (nextPageIndex < pages.length) {
+    const page = pages[nextPageIndex];
+    currentWorkerProcessTime.push({ page, start: performance.now() });
+
+    const toConvert: ConvertPageData = { ...convertData, pages: [page] };
+    worker.postMessage({ type: 'page', convertData: toConvert });
+    return;
+  }
+
+  logger(log, 'debug', `Worker ${threadId} has finished`);
+  worker.postMessage({ type: 'end' });
 }
 
 export { dynamicWorkersHandler };

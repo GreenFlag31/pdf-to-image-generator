@@ -8,6 +8,7 @@ import {
 import {
   authenticateWithPassword,
   createOutputDirectory,
+  differentialToTwoDigits,
   handleConversion,
   logger,
   prepareConversion,
@@ -34,11 +35,12 @@ async function convertToImages(file: MuPDFType, options: ConversionOptions) {
     pages = [],
     includeBufferContent = false,
     password,
-    useWorkerThread = false,
+    useWorkerThreads = false,
     maxWorkerThreads = Math.max(os.cpus().length - 1, 1),
     minPagesPerWorker = 2,
     workerStrategy = 'static',
     log,
+    workerActionOnFailure = 'abort',
   } = options;
 
   await createOutputDirectory(imageFolderName);
@@ -76,25 +78,30 @@ async function convertToImages(file: MuPDFType, options: ConversionOptions) {
     colorSpace,
     minPagesPerWorker,
     // reuse the document if not using worker threads
-    document: useWorkerThread ? null : pdf,
+    document: useWorkerThreads ? null : pdf,
     workerStrategy,
+    workerActionOnFailure,
   };
 
   const configuration: WorkerConfiguration = {
-    useWorkerThread,
+    useWorkerThreads,
     maxWorkerThreads,
   };
 
-  const startTime = process.hrtime.bigint();
+  const startTime = performance.now();
 
   const workersResults = await handleConversion(convertData, configuration, log);
 
-  const endTime = process.hrtime.bigint();
-  const durationMs = Number(endTime - startTime) / 1_000_000;
+  const endTime = performance.now();
+  const durationMs = differentialToTwoDigits(endTime, startTime);
 
   logger(log, 'info', `Pages converted (${pagesToConvert.length}): ${pagesToConvert.join(', ')}`);
-  logger(log, 'info', `${imageFolderName ? `Images rendered at: ${imageFolderName}` : ''} `);
-  logger(log, 'info', `Conversion finished in ${durationMs.toFixed(2)} ms`);
+  logger(
+    log,
+    'info',
+    `${imageFolderName ? `Images rendered at: ${imageFolderName}` : 'No images rendered on disk'} `,
+  );
+  logger(log, 'info', `Conversion finished in ${durationMs} ms`);
 
   pdf.destroy();
   return workersResults;
