@@ -1,5 +1,4 @@
-// @ts-ignore
-import { Stream, Document } from 'mupdf';
+import { PDFiumDocument } from '@hyzyla/pdfium';
 import { Worker } from 'worker_threads';
 
 export interface ImageData {
@@ -36,7 +35,7 @@ export interface ImageOutput {
 }
 
 export interface CommonConversionData {
-  document: Document;
+  document: PDFiumDocument;
   pages: number[];
   imageFileName: string | undefined;
   fileName: string | null;
@@ -55,16 +54,15 @@ export interface ConvertPageData {
   type: ImageType;
   imageFolderName: string | undefined;
   includeBufferContent: boolean;
-  file: MuPDFType;
-  colorSpace: 'DeviceGray' | 'DeviceRGB';
+  file: Buffer;
   minPagesPerWorker: number;
-  document: Document | null;
+  document: PDFiumDocument | null;
   workerStrategy: WorkerStrategy;
   workerActionOnFailure: WorkerFailureAction;
 }
 
 export interface ConvertPageDataWithDocumentRequired extends ConvertPageData {
-  document: Document;
+  document: PDFiumDocument;
 }
 
 export interface WorkerConfiguration {
@@ -74,9 +72,7 @@ export interface WorkerConfiguration {
 
 export type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
-export type MuPDFType = string | ArrayBuffer | Buffer | Stream;
-
-export type ImageType = 'png' | 'jpeg' | 'pam' | 'psd';
+export type ImageType = 'png' | 'jpeg';
 
 /**
  * The options of images rendering.
@@ -90,12 +86,7 @@ export type ConversionOptions = {
    */
   scale?: number;
   /**
-   * Choose between rendering in grayscale or color.
-   * @defaultValue DeviceRGB
-   */
-  colorSpace?: 'DeviceGray' | 'DeviceRGB';
-  /**
-   * Choose between PNG, JPEG, PAM, PSD.
+   * Choose between PNG, JPEG
    * @defaultValue PNG
    */
   type?: ImageType;
@@ -136,7 +127,13 @@ export type ConversionOptions = {
    */
   maxWorkerThreads?: number;
   /**
-   * Action to perform when a worker thread fails to convert a page. `retry` will only be performed once.
+   * Action to perform when a worker thread fails to convert a page:
+   *
+   * `retry`: will retry and only be performed once.
+   *
+   * `nextPage`: will skip the current page and continue with the next one.
+   *
+   * `abort`: will crash and stop the conversion process.
    * @defaultValue 'abort'
    */
   workerActionOnFailure?: WorkerFailureAction;
@@ -167,7 +164,8 @@ export interface MsgAndConvertData {
 
 export interface MsgToParentDynamicWorker {
   type: MsgType;
-  data: ImageOutput | Error;
+  data: ImageOutput;
+  error: Error;
 }
 
 export type MsgType = 'ready' | 'result' | 'error' | 'exit';

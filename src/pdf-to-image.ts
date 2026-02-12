@@ -2,11 +2,9 @@ import {
   CommonConversionData,
   ConversionOptions,
   ConvertPageData,
-  MuPDFType,
   WorkerConfiguration,
 } from './interfaces';
 import {
-  authenticateWithPassword,
   createOutputDirectory,
   differentialToTwoDigits,
   handleConversion,
@@ -16,6 +14,8 @@ import {
 import { ImageOutput } from './interfaces';
 import path from 'node:path';
 import os from 'os';
+import { PDFiumLibrary } from '@hyzyla/pdfium';
+import { promises } from 'node:fs';
 
 /**
  * Convert a PDF file to images.
@@ -23,12 +23,9 @@ import os from 'os';
  * @param options Conversion options
  * @returns An array of converted images {@link ImageOutput}
  */
-async function convertToImages(file: MuPDFType, options: ConversionOptions) {
-  const mupdf = await import('mupdf');
-
+async function convertToImages(file: string | Buffer, options: ConversionOptions) {
   const {
     scale = 1,
-    colorSpace = 'DeviceRGB',
     type = 'png',
     imageFolderName,
     imageFileName,
@@ -43,19 +40,12 @@ async function convertToImages(file: MuPDFType, options: ConversionOptions) {
     workerActionOnFailure = 'abort',
   } = options;
 
+  const library = await PDFiumLibrary.init();
+
+  const fileBuffered = Buffer.isBuffer(file) ? file : await promises.readFile(file);
+  const pdf = await library.loadDocument(fileBuffered, password);
+
   await createOutputDirectory(imageFolderName);
-
-  const pdf = mupdf.Document.openDocument(file);
-
-  if (!pdf.isPDF()) {
-    logger('error', 'error', 'The provided file is not a valid PDF document');
-    return [];
-  }
-
-  const authenticated = authenticateWithPassword(pdf, password, log);
-  if (!authenticated) {
-    return [];
-  }
 
   const commonConversionData: CommonConversionData = {
     document: pdf,
@@ -73,9 +63,8 @@ async function convertToImages(file: MuPDFType, options: ConversionOptions) {
     padNumber,
     pageName,
     pages: pagesToConvert,
-    file,
+    file: fileBuffered,
     scale,
-    colorSpace,
     minPagesPerWorker,
     // reuse the document if not using worker threads
     document: useWorkerThreads ? null : pdf,
@@ -90,7 +79,7 @@ async function convertToImages(file: MuPDFType, options: ConversionOptions) {
 
   const startTime = performance.now();
 
-  const workersResults = await handleConversion(convertData, configuration, log);
+  const results = await handleConversion(convertData, configuration, log);
 
   const endTime = performance.now();
   const durationMs = differentialToTwoDigits(endTime, startTime);
@@ -104,7 +93,7 @@ async function convertToImages(file: MuPDFType, options: ConversionOptions) {
   logger(log, 'info', `Conversion finished in ${durationMs} ms`);
 
   pdf.destroy();
-  return workersResults;
+  return results;
 }
 
 export { convertToImages };

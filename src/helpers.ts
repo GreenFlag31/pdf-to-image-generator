@@ -1,6 +1,5 @@
-import { promises } from 'fs';
-import path from 'path';
-import { workersHandler } from './worker/static-worker-handler';
+import { promises } from 'node:fs';
+import path from 'node:path';
 import {
   CommonConversionData,
   ConvertPageData,
@@ -9,16 +8,15 @@ import {
   WorkerConfiguration,
   LogLevel,
   ConvertPageDataWithDocumentRequired,
-  ImageType,
 } from './interfaces';
-// @ts-ignore
-import { Document, Pixmap } from 'mupdf';
-import { dynamicWorkersHandler } from './worker/dynamic-worker-handler';
+import { PDFiumPageRenderOptions } from '@hyzyla/pdfium';
+import sharp from 'sharp';
+import { workersHandler } from './worker/worker-handler';
 
 function prepareConversion(commonConversionData: CommonConversionData) {
   const { document, fileName, imageFileName, pages } = commonConversionData;
 
-  const totalPdfPages = document.countPages();
+  const totalPdfPages = Array.from(document.pages(), (page) => page.number).length + 1;
   const pagesToConvert = getPagesToBeConverted(pages, totalPdfPages);
   const padNumber = countPadForImageNameOnDisk(pagesToConvert.length);
   const pageName = getPageName(fileName, imageFileName);
@@ -27,7 +25,6 @@ function prepareConversion(commonConversionData: CommonConversionData) {
 }
 
 async function convertPages(convertData: ConvertPageDataWithDocumentRequired) {
-  const mupdf = await import('mupdf');
   const {
     imageFolderName,
     includeBufferContent,
@@ -36,18 +33,16 @@ async function convertPages(convertData: ConvertPageDataWithDocumentRequired) {
     pageName,
     pages,
     scale,
-    colorSpace,
     document,
   } = convertData;
   const imagesOutputs: ImageOutput[] = [];
 
-  const muScale = mupdf.Matrix.scale(scale, scale);
-  const muColorSpace = mupdf.ColorSpace[colorSpace];
-
   for (const index of pages) {
-    const page = document.loadPage(index);
-    const pixmap = page.toPixmap(muScale, muColorSpace);
-    const image = getImageAccordingToType(pixmap, type);
+    const page = document.getPage(index);
+    const image = await page.render({
+      scale,
+      render: renderFunction,
+    });
 
     const imageData: ImageData = {
       page: index,
@@ -56,26 +51,29 @@ async function convertPages(convertData: ConvertPageDataWithDocumentRequired) {
       imageFolderName,
       includeBufferContent,
       padNumber,
-      content: image,
+      content: image.data,
     };
 
     const imageOutput = getImageOutput(imageData);
     imagesOutputs.push(imageOutput);
 
-    pixmap.destroy();
-    page.destroy();
-    await writeFile(imageOutput.path, image);
+    await writeFile(imageOutput.path, image.data);
   }
 
   return imagesOutputs;
 }
 
-function getImageAccordingToType(pixmap: Pixmap, type: ImageType) {
-  if (type === 'jpeg') return pixmap.asJPEG(80);
-  if (type === 'pam') return pixmap.asPAM();
-  if (type === 'psd') return pixmap.asPSD();
-
-  return pixmap.asPNG();
+// ajouter renderFunction avec les options (types)
+async function renderFunction(options: PDFiumPageRenderOptions) {
+  return sharp(options.data, {
+    raw: {
+      width: options.width,
+      height: options.height,
+      channels: 4,
+    },
+  })
+    .jpeg()
+    .toBuffer();
 }
 
 async function writeFile(imageMask: string | null, pngImage: Uint8Array) {
@@ -133,13 +131,7 @@ async function handleConversion(
   logger(log, 'debug', `Running conversion using ${workerCount} worker threads`);
   logger(log, 'debug', `Worker strategy: ${workerStrategy}`);
 
-  if (workerStrategy === 'dynamic') {
-    const dynamicWorkerResults = await dynamicWorkersHandler(workerCount, convertData, log);
-
-    return dynamicWorkerResults;
-  }
-
-  const workersResults = await workersHandler(convertData, pagesPerWorkers, log);
+  const workersResults = await workersHandler(workerCount, pagesPerWorkers, convertData, log);
 
   return workersResults;
 }
@@ -221,43 +213,6 @@ function differentialToTwoDigits(end: number, start: number) {
   return (end - start).toFixed(2);
 }
 
-function authenticateWithPassword(
-  document: Document,
-  password: string | undefined,
-  log: LogLevel | undefined,
-) {
-  const needAuth = document.needsPassword();
-
-  if (needAuth && !password) {
-    logger(
-      'error',
-      'error',
-      'The PDF document is password-protected. Please provide a password to open it.',
-    );
-    return false;
-  }
-
-  if (!password) return true;
-
-  const auth = document.authenticatePassword(password);
-
-  if (auth === 0) {
-    logger('error', 'error', 'Password is incorrect. Unable to open the PDF document');
-    return false;
-  }
-
-  if (auth === 1) {
-    logger(log, 'warn', 'No password is required to open the PDF document');
-
-    return true;
-  } else if (auth === 2 || auth === 4) {
-    logger(log, 'info', 'Password is correct');
-    return true;
-  }
-
-  return true;
-}
-
 export {
   writeFile,
   convertPages,
@@ -269,6 +224,5 @@ export {
   logger,
   countPadForImageNameOnDisk,
   createOutputDirectory,
-  authenticateWithPassword,
   differentialToTwoDigits,
 };

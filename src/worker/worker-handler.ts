@@ -10,17 +10,18 @@ import {
 import path from 'path';
 import { differentialToTwoDigits, logger } from '../helpers';
 
-function dynamicWorkersHandler(
+function workersHandler(
   workerCount: number,
+  pagesPerWorkers: number[][],
   convertData: ConvertPageData,
   log: LogLevel | undefined,
 ) {
   return new Promise<ImageOutput[]>((resolve, reject) => {
     const results: ImageOutput[] = [];
-    const workerPath = path.join(__dirname, './dynamic-worker.js');
+    const workerPath = path.join(__dirname, './worker.js');
 
-    const { pages, workerActionOnFailure } = convertData;
-    let nextPageIndex = 0;
+    const { pages, workerActionOnFailure, workerStrategy } = convertData;
+    let nextDynamicIndex = 0;
     let activeWorkers = 0;
 
     for (let i = 0; i < workerCount; i++) {
@@ -29,41 +30,43 @@ function dynamicWorkersHandler(
       const workerProcessTime = new Map<number, WorkerProcessTime[]>();
       workerProcessTime.set(threadId, []);
       let hasRetried = false;
+      let nextStaticIndex = 0;
       activeWorkers++;
 
       worker.on('message', (msg: MsgToParentDynamicWorker) => {
-        const { type, data } = msg;
+        const { type, data, error } = msg;
         const currentWorkerProcessTime = workerProcessTime.get(threadId)!;
         const workerLastPageAndTime = currentWorkerProcessTime.at(-1)!;
         const workerReadyState: WorkerReadyState = {
           worker,
           convertData,
           log,
-          nextPageIndex,
-          pages,
+          nextPageIndex: workerStrategy === 'dynamic' ? nextDynamicIndex : nextStaticIndex,
+          pages: workerStrategy === 'dynamic' ? pages : pagesPerWorkers[i],
           currentWorkerProcessTime,
           threadId,
         };
 
         if (type === 'ready') {
           handleWorkerReadyState(workerReadyState);
-          nextPageIndex++;
+          nextDynamicIndex++;
+          nextStaticIndex++;
         }
 
         if (type === 'result') {
           logger(
             log,
             'debug',
-            `Worker ${threadId} has processed page ${(data as ImageOutput).page} in ${differentialToTwoDigits(performance.now(), workerLastPageAndTime.start)} ms`,
+            `Worker ${threadId} has processed page ${data.page} in ${differentialToTwoDigits(performance.now(), workerLastPageAndTime.start)} ms`,
           );
 
-          results.push(data as ImageOutput);
+          results.push(data);
         }
 
         if (type === 'error') {
           if (hasRetried || workerActionOnFailure === 'abort') {
             logger(log, 'error', `Worker ${threadId} has crashed`);
-            throw data as Error;
+            throw error;
           }
 
           if (workerActionOnFailure === 'retry') {
@@ -89,7 +92,8 @@ function dynamicWorkersHandler(
             );
 
             handleWorkerReadyState(workerReadyState);
-            nextPageIndex++;
+            nextDynamicIndex++;
+            nextStaticIndex++;
           }
         }
 
@@ -132,4 +136,4 @@ function handleWorkerReadyState(workerReadyState: WorkerReadyState) {
   worker.postMessage({ type: 'end' });
 }
 
-export { dynamicWorkersHandler };
+export { workersHandler, handleWorkerReadyState };
