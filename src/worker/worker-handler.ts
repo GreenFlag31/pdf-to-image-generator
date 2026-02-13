@@ -1,6 +1,7 @@
 import { Worker } from 'worker_threads';
 import {
-  ConvertPageData,
+  ConvertPageDataToWorker,
+  GeneralConvertData,
   ImageOutput,
   LogLevel,
   MsgToParentDynamicWorker,
@@ -8,21 +9,25 @@ import {
   WorkerReadyState,
 } from '../interfaces';
 import path from 'path';
-import { differentialToTwoDigits, logger } from '../helpers';
+import { differentialToTwoDigits, logger, notifyCallbackWithProgress } from '../helpers';
 
 function workersHandler(
   workerCount: number,
   pagesPerWorkers: number[][],
-  convertData: ConvertPageData,
+  generalConvertData: GeneralConvertData,
   log: LogLevel | undefined,
 ) {
   return new Promise<ImageOutput[]>((resolve, reject) => {
     const results: ImageOutput[] = [];
     const workerPath = path.join(__dirname, './worker.js');
 
-    const { pages, workerActionOnFailure, workerStrategy } = convertData;
+    const { pages, workerActionOnFailure, workerStrategy } = generalConvertData;
+    const { progressCallback, ...restOfData } = generalConvertData;
+
+    const allPages = pagesPerWorkers.flat();
     let nextDynamicIndex = 0;
     let activeWorkers = 0;
+    let resultIndex = 0;
 
     for (let i = 0; i < workerCount; i++) {
       const worker = new Worker(workerPath);
@@ -37,18 +42,21 @@ function workersHandler(
         const { type, data, error } = msg;
         const currentWorkerProcessTime = workerProcessTime.get(threadId)!;
         const workerLastPageAndTime = currentWorkerProcessTime.at(-1)!;
+
         const workerReadyState: WorkerReadyState = {
           worker,
-          convertData,
+          dataToWorker: restOfData,
           log,
           nextPageIndex: workerStrategy === 'dynamic' ? nextDynamicIndex : nextStaticIndex,
           pages: workerStrategy === 'dynamic' ? pages : pagesPerWorkers[i],
           currentWorkerProcessTime,
           threadId,
+          allPages,
         };
 
         if (type === 'ready') {
           handleWorkerReadyState(workerReadyState);
+
           nextDynamicIndex++;
           nextStaticIndex++;
         }
@@ -60,6 +68,13 @@ function workersHandler(
             `Worker ${threadId} has processed page ${data.page} in ${differentialToTwoDigits(performance.now(), workerLastPageAndTime.start)} ms`,
           );
 
+          notifyCallbackWithProgress(
+            resultIndex,
+            workerLastPageAndTime.page,
+            allPages,
+            progressCallback,
+          );
+          resultIndex++;
           results.push(data);
         }
 
@@ -70,8 +85,8 @@ function workersHandler(
           }
 
           if (workerActionOnFailure === 'retry') {
-            const toConvert: ConvertPageData = {
-              ...convertData,
+            const toConvert: GeneralConvertData = {
+              ...generalConvertData,
               pages: [workerLastPageAndTime.page],
             };
 
@@ -120,14 +135,22 @@ function workersHandler(
  * Ready to take next page or finish.
  */
 function handleWorkerReadyState(workerReadyState: WorkerReadyState) {
-  const { worker, convertData, log, nextPageIndex, pages, currentWorkerProcessTime, threadId } =
-    workerReadyState;
+  const {
+    worker,
+    dataToWorker,
+    log,
+    nextPageIndex,
+    pages,
+    currentWorkerProcessTime,
+    threadId,
+    allPages,
+  } = workerReadyState;
 
   if (nextPageIndex < pages.length) {
     const page = pages[nextPageIndex];
     currentWorkerProcessTime.push({ page, start: performance.now() });
 
-    const toConvert: ConvertPageData = { ...convertData, pages: [page] };
+    const toConvert: ConvertPageDataToWorker = { ...dataToWorker, pages: [page], allPages };
     worker.postMessage({ type: 'page', convertData: toConvert });
     return;
   }

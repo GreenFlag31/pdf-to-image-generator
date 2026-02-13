@@ -1,7 +1,7 @@
 import {
   CommonConversionData,
   ConversionOptions,
-  ConvertPageData,
+  GeneralConvertData,
   WorkerConfiguration,
 } from './interfaces';
 import {
@@ -11,7 +11,7 @@ import {
   logger,
   prepareConversion,
 } from './helpers';
-import { ImageOutput } from './interfaces';
+import { ImageOutput } from './index';
 import path from 'node:path';
 import os from 'os';
 import { PDFiumLibrary } from '@hyzyla/pdfium';
@@ -19,9 +19,9 @@ import { promises } from 'node:fs';
 
 /**
  * Convert a PDF file to images.
- * @param file Provide a PDF file of type {@link MuPDFType}
- * @param options Conversion options
- * @returns An array of converted images {@link ImageOutput}
+ * @param file Provide a PDF file as a path or as a Buffer.
+ * @param options Conversion options {@link ConversionOptions}
+ * @returns Converted images {@link ImageOutput}[]
  */
 async function convertToImages(file: string | Buffer, options: ConversionOptions) {
   const {
@@ -38,6 +38,7 @@ async function convertToImages(file: string | Buffer, options: ConversionOptions
     workerStrategy = 'static',
     log,
     workerActionOnFailure = 'abort',
+    progressCallback,
   } = options;
 
   const library = await PDFiumLibrary.init();
@@ -56,7 +57,7 @@ async function convertToImages(file: string | Buffer, options: ConversionOptions
 
   const { pagesToConvert, padNumber, pageName } = prepareConversion(commonConversionData);
 
-  const convertData: ConvertPageData = {
+  const generalConvertData: GeneralConvertData = {
     type,
     imageFolderName,
     includeBufferContent,
@@ -70,6 +71,7 @@ async function convertToImages(file: string | Buffer, options: ConversionOptions
     document: useWorkerThreads ? null : pdf,
     workerStrategy,
     workerActionOnFailure,
+    progressCallback,
   };
 
   const configuration: WorkerConfiguration = {
@@ -79,7 +81,7 @@ async function convertToImages(file: string | Buffer, options: ConversionOptions
 
   const startTime = performance.now();
 
-  const results = await handleConversion(convertData, configuration, log);
+  const results = await handleConversion(generalConvertData, configuration, log);
 
   const endTime = performance.now();
   const durationMs = differentialToTwoDigits(endTime, startTime);

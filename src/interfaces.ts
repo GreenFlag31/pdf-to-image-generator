@@ -43,7 +43,7 @@ export interface CommonConversionData {
 
 export type WorkerStrategy = 'static' | 'dynamic';
 
-export interface ConvertPageData {
+export interface GeneralConvertData {
   /**
    * All the pages to convert.
    */
@@ -59,10 +59,36 @@ export interface ConvertPageData {
   document: PDFiumDocument | null;
   workerStrategy: WorkerStrategy;
   workerActionOnFailure: WorkerFailureAction;
+  progressCallback?: (data: ProgressData) => any;
 }
 
-export interface ConvertPageDataWithDocumentRequired extends ConvertPageData {
+/**
+ * The data sent to the `convertPages` helper function.
+ */
+export interface ConvertPageData {
+  /**
+   * All pages in case of no worker threads, 1 by 1 in case of worker threads.
+   */
+  pages: number[];
+  allPages: number[];
+  pageName: string | undefined;
+  padNumber: number;
+  scale: number;
+  type: ImageType;
+  imageFolderName: string | undefined;
+  includeBufferContent: boolean;
   document: PDFiumDocument;
+  /**
+   * Provided only in case of not using worker threads.
+   */
+  progressCallback?: (data: ProgressData) => any;
+}
+
+export interface ConvertPageDataToWorker extends Omit<
+  ConvertPageData,
+  'document' | 'progressCallback'
+> {
+  file: Buffer;
 }
 
 export interface WorkerConfiguration {
@@ -106,7 +132,7 @@ export type ConversionOptions = {
    */
   pages?: number[];
   /**
-   * The password to authenticate if the PDF file is protected.
+   * The password to authenticate.
    * @defaultValue undefined
    */
   password?: string;
@@ -117,7 +143,7 @@ export type ConversionOptions = {
   useWorkerThreads?: boolean;
   /**
    * Worker scheduling strategy.
-   * Dynamic strategy can be more efficient for heterogeneous PDFs.
+   * Static strategy assigns a fixed number of pages to each worker thread at the beginning of the conversion. Dynamic strategy assigns pages to worker threads on the fly, when they become available. Dynamic strategy can be faster for heterogeneous PDFs where the time to convert each page can vary significantly.
    * @defaultValue static
    */
   workerStrategy?: 'static' | 'dynamic';
@@ -129,9 +155,9 @@ export type ConversionOptions = {
   /**
    * Action to perform when a worker thread fails to convert a page:
    *
-   * `retry`: will retry and only be performed once.
+   * `retry`: will retry once to convert the page.
    *
-   * `nextPage`: will skip the current page and continue with the next one.
+   * `nextPage`: will skip the page and continue with the next one.
    *
    * `abort`: will crash and stop the conversion process.
    * @defaultValue 'abort'
@@ -149,17 +175,41 @@ export type ConversionOptions = {
    */
   includeBufferContent?: boolean;
   /**
+   * Callback function to track the progress of the conversion. Usefull for UI/UX purposes.
+   * @defaultValue undefined
+   */
+  progressCallback?: (data: ProgressData) => any;
+  /**
    * Log level.
    * @defaultValue undefined
    */
   log?: LogLevel;
 };
 
+export interface ProgressData {
+  /**
+   * The page index converted (not the real page number). Starts at 1 (for UI/UX purposes).
+   */
+  pageIndex: number;
+  /**
+   * The page number converted. Starts at 1.
+   */
+  pageNumber: number;
+  /**
+   * The total number of pages to convert.
+   */
+  totalPages: number;
+  /**
+   * The progress of the conversion in percentage.
+   */
+  progress: string;
+}
+
 export type WorkerFailureAction = 'retry' | 'nextPage' | 'abort';
 
 export interface MsgAndConvertData {
   type: string;
-  convertData: ConvertPageData;
+  convertData: ConvertPageDataToWorker;
 }
 
 export interface MsgToParentDynamicWorker {
@@ -177,10 +227,11 @@ export interface WorkerProcessTime {
 
 export interface WorkerReadyState {
   worker: Worker;
-  convertData: ConvertPageData;
+  dataToWorker: Omit<GeneralConvertData, 'progressCallback'>;
   log: LogLevel | undefined;
   nextPageIndex: number;
   pages: number[];
+  allPages: number[];
   threadId: number;
   currentWorkerProcessTime: WorkerProcessTime[];
 }

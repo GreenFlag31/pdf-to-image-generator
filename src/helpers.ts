@@ -2,12 +2,14 @@ import { promises } from 'node:fs';
 import path from 'node:path';
 import {
   CommonConversionData,
-  ConvertPageData,
+  GeneralConvertData,
   ImageOutput,
   ImageData,
   WorkerConfiguration,
   LogLevel,
-  ConvertPageDataWithDocumentRequired,
+  ImageType,
+  ConvertPageData,
+  ProgressData,
 } from './interfaces';
 import { PDFiumPageRenderOptions } from '@hyzyla/pdfium';
 import sharp from 'sharp';
@@ -24,7 +26,7 @@ function prepareConversion(commonConversionData: CommonConversionData) {
   return { pagesToConvert, padNumber, pageName };
 }
 
-async function convertPages(convertData: ConvertPageDataWithDocumentRequired) {
+async function convertPages(convertData: ConvertPageData) {
   const {
     imageFolderName,
     includeBufferContent,
@@ -34,6 +36,8 @@ async function convertPages(convertData: ConvertPageDataWithDocumentRequired) {
     pages,
     scale,
     document,
+    allPages,
+    progressCallback,
   } = convertData;
   const imagesOutputs: ImageOutput[] = [];
 
@@ -41,7 +45,7 @@ async function convertPages(convertData: ConvertPageDataWithDocumentRequired) {
     const page = document.getPage(index);
     const image = await page.render({
       scale,
-      render: renderFunction,
+      render: renderWithType(type),
     });
 
     const imageData: ImageData = {
@@ -56,6 +60,7 @@ async function convertPages(convertData: ConvertPageDataWithDocumentRequired) {
 
     const imageOutput = getImageOutput(imageData);
     imagesOutputs.push(imageOutput);
+    notifyCallbackWithProgress(index, index, allPages, progressCallback);
 
     await writeFile(imageOutput.path, image.data);
   }
@@ -63,17 +68,44 @@ async function convertPages(convertData: ConvertPageDataWithDocumentRequired) {
   return imagesOutputs;
 }
 
-// ajouter renderFunction avec les options (types)
-async function renderFunction(options: PDFiumPageRenderOptions) {
-  return sharp(options.data, {
-    raw: {
-      width: options.width,
-      height: options.height,
-      channels: 4,
-    },
-  })
-    .jpeg()
-    .toBuffer();
+function notifyCallbackWithProgress(
+  pageIndex: number,
+  pageNumber: number,
+  allPages: number[],
+  progressCallback?: (data: ProgressData) => any,
+) {
+  if (typeof progressCallback !== 'function') return;
+
+  const progress = ((pageIndex + 1) / allPages.length) * 100;
+
+  progressCallback({
+    pageIndex: pageIndex + 1,
+    pageNumber: pageNumber + 1,
+    totalPages: allPages.length,
+    progress: progress.toFixed(2),
+  });
+}
+
+function renderWithType(type: ImageType) {
+  function render(options: PDFiumPageRenderOptions) {
+    const { data, width, height } = options;
+
+    const sharpInstance = sharp(data, {
+      raw: {
+        width,
+        height,
+        channels: 4,
+      },
+    });
+
+    if (type === 'jpeg') {
+      return sharpInstance.jpeg().toBuffer();
+    }
+
+    return sharpInstance.png().toBuffer();
+  }
+
+  return render;
 }
 
 async function writeFile(imageMask: string | null, pngImage: Uint8Array) {
@@ -108,17 +140,42 @@ function getPageName(fileName: string | null, imageFileName?: string) {
 }
 
 async function handleConversion(
-  convertData: ConvertPageData,
+  generalConvertData: GeneralConvertData,
   configuration: WorkerConfiguration,
   log: LogLevel | undefined,
 ): Promise<ImageOutput[]> {
   const { maxWorkerThreads, useWorkerThreads } = configuration;
-  const { pages, minPagesPerWorker, workerStrategy } = convertData;
+  const {
+    pages,
+    minPagesPerWorker,
+    workerStrategy,
+    document,
+    imageFolderName,
+    includeBufferContent,
+    padNumber,
+    pageName,
+    scale,
+    type,
+    progressCallback,
+  } = generalConvertData;
 
   if (!useWorkerThreads) {
     logger(log, 'debug', 'Running conversion without worker threads');
 
-    const pagesConverted = await convertPages(convertData as ConvertPageDataWithDocumentRequired);
+    const convertData: ConvertPageData = {
+      allPages: pages,
+      document: document!,
+      imageFolderName,
+      includeBufferContent,
+      padNumber,
+      pageName,
+      scale,
+      type,
+      pages,
+      progressCallback,
+    };
+
+    const pagesConverted = await convertPages(convertData);
     return pagesConverted;
   }
 
@@ -131,7 +188,12 @@ async function handleConversion(
   logger(log, 'debug', `Running conversion using ${workerCount} worker threads`);
   logger(log, 'debug', `Worker strategy: ${workerStrategy}`);
 
-  const workersResults = await workersHandler(workerCount, pagesPerWorkers, convertData, log);
+  const workersResults = await workersHandler(
+    workerCount,
+    pagesPerWorkers,
+    generalConvertData,
+    log,
+  );
 
   return workersResults;
 }
@@ -225,4 +287,5 @@ export {
   countPadForImageNameOnDisk,
   createOutputDirectory,
   differentialToTwoDigits,
+  notifyCallbackWithProgress,
 };

@@ -8,4 +8,6 @@ export type {
   WorkerStrategy,
   LogLevel,
   ImageType,
+  ProgressData,
+  WorkerFailureAction,
 } from './interfaces';
