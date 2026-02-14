@@ -2,6 +2,7 @@ import path from 'path';
 import { promises } from 'node:fs';
 import { convertToImages } from './pdf-to-image';
 import { ConversionOptions, ProgressData } from './interfaces';
+import { log } from 'node:console';
 
 function progressCallback(data: ProgressData) {
   console.log(
@@ -16,16 +17,17 @@ async function convert() {
   await promises.mkdir(dir1, { recursive: true });
 
   const conversionsOptions: ConversionOptions = {
-    imageFolderName: dir1,
+    // imageFolderName: dir1,
     pages: [0, 1, 2, 3, 4, 5],
-    log: 'debug',
+    // log: 'debug',
     useWorkerThreads: true,
-    workerStrategy: 'dynamic',
+    // workerStrategy: 'dynamic',
     workerActionOnFailure: 'nextPage',
-    progressCallback,
+    // progressCallback,
   };
 
   const conversion = await convertToImages(filePath, conversionsOptions);
+  log('Conversion completed. Converted images:', conversion);
 }
 
 convert();

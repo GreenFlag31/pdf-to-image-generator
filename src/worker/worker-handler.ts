@@ -25,7 +25,7 @@ function workersHandler(
     const { progressCallback, ...restOfData } = convertDataToWorkerHandler;
 
     const allPages = pagesPerWorkers.flat();
-    let nextDynamicIndex = 0;
+    let nextDynamicIndex = 0; // global scope
     let activeWorkers = 0;
     let resultIndex = 0;
 
@@ -34,7 +34,7 @@ function workersHandler(
       const { threadId } = worker;
       const workerProcessTime = new Map<number, WorkerProcessTime[]>();
       workerProcessTime.set(threadId, []);
-      let nextStaticIndex = 0;
+      let nextStaticIndex = 0; // "local" scope
       activeWorkers++;
 
       worker.on('message', (msg: MsgToParentDynamicWorker) => {

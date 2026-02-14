@@ -18,7 +18,7 @@ import { workersHandler } from './worker/worker-handler';
 function prepareConversion(commonConversionData: CommonConversionData) {
   const { document, fileName, imageFileName, pages } = commonConversionData;
 
-  const totalPdfPages = Array.from(document.pages(), (page) => page.number).length + 1;
+  const totalPdfPages = document.getPageCount();
   const pagesToConvert = getPagesToBeConverted(pages, totalPdfPages);
   const padNumber = countPadForImageNameOnDisk(pagesToConvert.length);
   const pageName = getPageName(fileName, imageFileName);
@@ -68,6 +68,9 @@ async function convertPages(convertData: ConvertPageData) {
   return imagesOutputs;
 }
 
+/**
+ * Notify the progress to the users with one indexed page numbers for UI/UX purposes.
+ */
 function notifyCallbackWithProgress(
   pageIndex: number,
   pageNumber: number,
