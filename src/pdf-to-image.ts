@@ -1,7 +1,7 @@
 import {
   CommonConversionData,
   ConversionOptions,
-  GeneralConvertData,
+  ConvertDataToWorkerHandler,
   WorkerConfiguration,
 } from './interfaces';
 import {
@@ -14,8 +14,15 @@ import {
 import { ImageOutput } from './index';
 import path from 'node:path';
 import os from 'os';
-import { PDFiumLibrary } from '@hyzyla/pdfium';
+import { PDFiumDocument, PDFiumLibrary } from '@hyzyla/pdfium';
 import { promises } from 'node:fs';
+let library: PDFiumLibrary | null = null;
+
+(async function init() {
+  if (!library) {
+    library = await PDFiumLibrary.init();
+  }
+})();
 
 /**
  * Convert a PDF file to images.
@@ -24,78 +31,86 @@ import { promises } from 'node:fs';
  * @returns Converted images {@link ImageOutput}[]
  */
 async function convertToImages(file: string | Buffer, options: ConversionOptions) {
-  const {
-    scale = 1,
-    type = 'png',
-    imageFolderName,
-    imageFileName,
-    pages = [],
-    includeBufferContent = false,
-    password,
-    useWorkerThreads = false,
-    maxWorkerThreads = Math.max(os.cpus().length - 1, 1),
-    minPagesPerWorker = 2,
-    workerStrategy = 'static',
-    log,
-    workerActionOnFailure = 'abort',
-    progressCallback,
-  } = options;
+  let pdf: PDFiumDocument | null = null;
 
-  const library = await PDFiumLibrary.init();
+  try {
+    if (!library) library = await PDFiumLibrary.init(); // if RC
 
-  const fileBuffered = Buffer.isBuffer(file) ? file : await promises.readFile(file);
-  const pdf = await library.loadDocument(fileBuffered, password);
+    const {
+      scale = 1,
+      type = 'png',
+      imageFolderName,
+      imageFileName,
+      pages = [],
+      includeBufferContent = false,
+      password,
+      useWorkerThreads = false,
+      maxWorkerThreads = Math.max(os.cpus().length - 1, 1),
+      minPagesPerWorker = 2,
+      workerStrategy = 'static',
+      log,
+      workerActionOnFailure = 'abort',
+      progressCallback,
+    } = options;
 
-  await createOutputDirectory(imageFolderName);
+    const fileBuffered = Buffer.isBuffer(file) ? file : await promises.readFile(file);
+    pdf = await library.loadDocument(fileBuffered, password);
 
-  const commonConversionData: CommonConversionData = {
-    document: pdf,
-    fileName: typeof file === 'string' ? path.parse(file).name : null,
-    imageFileName,
-    pages,
-  };
+    await createOutputDirectory(imageFolderName);
 
-  const { pagesToConvert, padNumber, pageName } = prepareConversion(commonConversionData);
+    const commonConversionData: CommonConversionData = {
+      document: pdf,
+      fileName: typeof file === 'string' ? path.parse(file).name : null,
+      imageFileName,
+      pages,
+    };
 
-  const generalConvertData: GeneralConvertData = {
-    type,
-    imageFolderName,
-    includeBufferContent,
-    padNumber,
-    pageName,
-    pages: pagesToConvert,
-    file: fileBuffered,
-    scale,
-    minPagesPerWorker,
-    // reuse the document if not using worker threads
-    document: useWorkerThreads ? null : pdf,
-    workerStrategy,
-    workerActionOnFailure,
-    progressCallback,
-  };
+    const { pagesToConvert, padNumber, pageName } = prepareConversion(commonConversionData);
 
-  const configuration: WorkerConfiguration = {
-    useWorkerThreads,
-    maxWorkerThreads,
-  };
+    const generalConvertData: ConvertDataToWorkerHandler = {
+      type,
+      imageFolderName,
+      includeBufferContent,
+      padNumber,
+      pageName,
+      pages: pagesToConvert,
+      file: fileBuffered,
+      scale,
+      minPagesPerWorker,
+      // reuse the document if not using worker threads
+      document: useWorkerThreads ? null : pdf,
+      workerStrategy,
+      workerActionOnFailure,
+      progressCallback,
+    };
 
-  const startTime = performance.now();
+    const configuration: WorkerConfiguration = {
+      useWorkerThreads,
+      maxWorkerThreads,
+    };
 
-  const results = await handleConversion(generalConvertData, configuration, log);
+    const startTime = performance.now();
 
-  const endTime = performance.now();
-  const durationMs = differentialToTwoDigits(endTime, startTime);
+    const results = await handleConversion(generalConvertData, configuration, log);
 
-  logger(log, 'info', `Pages converted (${pagesToConvert.length}): ${pagesToConvert.join(', ')}`);
-  logger(
-    log,
-    'info',
-    `${imageFolderName ? `Images rendered at: ${imageFolderName}` : 'No images rendered on disk'} `,
-  );
-  logger(log, 'info', `Conversion finished in ${durationMs} ms`);
+    const endTime = performance.now();
+    const durationMs = differentialToTwoDigits(endTime, startTime);
 
-  pdf.destroy();
-  return results;
+    logger(log, 'info', `Pages converted (${pagesToConvert.length}): ${pagesToConvert.join(', ')}`);
+    logger(
+      log,
+      'info',
+      `${imageFolderName ? `Images rendered at: ${imageFolderName}` : 'No images rendered on disk'} `,
+    );
+    logger(log, 'info', `Conversion finished in ${durationMs} ms`);
+    logger(log, 'debug', `Conversion finished in ${durationMs} ms`);
+
+    return results;
+  } catch (error) {
+    throw new Error(`Conversion failed: ${error instanceof Error ? error.message : String(error)}`);
+  } finally {
+    pdf?.destroy();
+  }
 }
 
 export { convertToImages };

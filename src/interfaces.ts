@@ -43,7 +43,7 @@ export interface CommonConversionData {
 
 export type WorkerStrategy = 'static' | 'dynamic';
 
-export interface GeneralConvertData {
+export interface ConvertDataToWorkerHandler {
   /**
    * All the pages to convert.
    */
@@ -85,10 +85,12 @@ export interface ConvertPageData {
 }
 
 export interface ConvertPageDataToWorker extends Omit<
-  ConvertPageData,
+  ConvertDataToWorkerHandler,
   'document' | 'progressCallback'
 > {
   file: Buffer;
+  workerActionOnFailure: WorkerFailureAction;
+  allPages: number[];
 }
 
 export interface WorkerConfiguration {
@@ -216,6 +218,7 @@ export interface MsgToParentDynamicWorker {
   type: MsgType;
   data: ImageOutput;
   error: Error;
+  hasRetried: boolean;
 }
 
 export type MsgType = 'ready' | 'result' | 'error' | 'exit';
@@ -227,7 +230,7 @@ export interface WorkerProcessTime {
 
 export interface WorkerReadyState {
   worker: Worker;
-  dataToWorker: Omit<GeneralConvertData, 'progressCallback'>;
+  dataToWorker: Omit<ConvertDataToWorkerHandler, 'progressCallback'>;
   log: LogLevel | undefined;
   nextPageIndex: number;
   pages: number[];

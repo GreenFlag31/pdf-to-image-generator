@@ -2,7 +2,7 @@ import { promises } from 'node:fs';
 import path from 'node:path';
 import {
   CommonConversionData,
-  GeneralConvertData,
+  ConvertDataToWorkerHandler,
   ImageOutput,
   ImageData,
   WorkerConfiguration,
@@ -140,7 +140,7 @@ function getPageName(fileName: string | null, imageFileName?: string) {
 }
 
 async function handleConversion(
-  generalConvertData: GeneralConvertData,
+  generalConvertData: ConvertDataToWorkerHandler,
   configuration: WorkerConfiguration,
   log: LogLevel | undefined,
 ): Promise<ImageOutput[]> {

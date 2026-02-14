@@ -1,7 +1,7 @@
 import { Worker } from 'worker_threads';
 import {
   ConvertPageDataToWorker,
-  GeneralConvertData,
+  ConvertDataToWorkerHandler,
   ImageOutput,
   LogLevel,
   MsgToParentDynamicWorker,
@@ -14,15 +14,15 @@ import { differentialToTwoDigits, logger, notifyCallbackWithProgress } from '../
 function workersHandler(
   workerCount: number,
   pagesPerWorkers: number[][],
-  generalConvertData: GeneralConvertData,
+  convertDataToWorkerHandler: ConvertDataToWorkerHandler,
   log: LogLevel | undefined,
 ) {
   return new Promise<ImageOutput[]>((resolve, reject) => {
     const results: ImageOutput[] = [];
     const workerPath = path.join(__dirname, './worker.js');
 
-    const { pages, workerActionOnFailure, workerStrategy } = generalConvertData;
-    const { progressCallback, ...restOfData } = generalConvertData;
+    const { pages, workerActionOnFailure, workerStrategy } = convertDataToWorkerHandler;
+    const { progressCallback, ...restOfData } = convertDataToWorkerHandler;
 
     const allPages = pagesPerWorkers.flat();
     let nextDynamicIndex = 0;
@@ -34,12 +34,11 @@ function workersHandler(
       const { threadId } = worker;
       const workerProcessTime = new Map<number, WorkerProcessTime[]>();
       workerProcessTime.set(threadId, []);
-      let hasRetried = false;
       let nextStaticIndex = 0;
       activeWorkers++;
 
       worker.on('message', (msg: MsgToParentDynamicWorker) => {
-        const { type, data, error } = msg;
+        const { type, data, error, hasRetried = false } = msg;
         const currentWorkerProcessTime = workerProcessTime.get(threadId)!;
         const workerLastPageAndTime = currentWorkerProcessTime.at(-1)!;
 
@@ -79,14 +78,14 @@ function workersHandler(
         }
 
         if (type === 'error') {
-          if (hasRetried || workerActionOnFailure === 'abort') {
+          if (workerActionOnFailure === 'abort' || hasRetried) {
             logger(log, 'error', `Worker ${threadId} has crashed`);
             throw error;
           }
 
           if (workerActionOnFailure === 'retry') {
-            const toConvert: GeneralConvertData = {
-              ...generalConvertData,
+            const toConvert: ConvertDataToWorkerHandler = {
+              ...convertDataToWorkerHandler,
               pages: [workerLastPageAndTime.page],
             };
 
@@ -96,7 +95,6 @@ function workersHandler(
               `Worker ${threadId} has encountered an error and is retrying page ${workerLastPageAndTime.page}`,
             );
             worker.postMessage({ type: 'page', convertData: toConvert });
-            hasRetried = true;
           }
 
           if (workerActionOnFailure === 'nextPage') {
@@ -156,7 +154,7 @@ function handleWorkerReadyState(workerReadyState: WorkerReadyState) {
   }
 
   logger(log, 'debug', `Worker ${threadId} has finished`);
-  worker.postMessage({ type: 'end' });
+  worker.postMessage({ type: 'end', convertData: {} });
 }
 
 export { workersHandler, handleWorkerReadyState };
