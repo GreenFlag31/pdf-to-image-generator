@@ -17,7 +17,7 @@ export interface ImageOutput {
    */
   page: number;
   /**
-   * The type of the image (png, jpeg, pam, psd)
+   * The type of the image {@link ImageType}.
    */
   type: ImageType;
   /**
@@ -29,7 +29,8 @@ export interface ImageOutput {
    */
   path: string | null;
   /**
-   * Buffer content of the image. Including the content can make the object heavy. Content is automatically included if `imageFolderName` option is not provided.
+   * Buffer content of the image. Including the content increases memory usage.
+   * Content is automatically included if `imageFolderName` option is not provided.
    */
   content: Uint8Array | null;
 }
@@ -67,7 +68,7 @@ export interface ConvertDataToWorkerHandler {
  */
 export interface ConvertPageData {
   /**
-   * All pages in case of no worker threads, 1 by 1 in case of worker threads.
+   * All pages in case of normal flow (worker threads), 1 by 1 in case of worker threads.
    */
   pages: number[];
   allPages: number[];
@@ -125,7 +126,7 @@ export type ConversionOptions = {
   imageFolderName?: string;
   /**
    * The name of the image file.
-   * @defaultValue example: `pageName_01.png`
+   * @defaultValue undefined
    */
   imageFileName?: string;
   /**
@@ -148,20 +149,14 @@ export type ConversionOptions = {
    * Static strategy assigns a fixed number of pages to each worker thread at the beginning of the conversion. Dynamic strategy assigns pages to worker threads on the fly, when they become available. Dynamic strategy can be faster for heterogeneous PDFs where the time to convert each page can vary significantly.
    * @defaultValue static
    */
-  workerStrategy?: 'static' | 'dynamic';
+  workerStrategy?: WorkerStrategy;
   /**
    * Max number of worker threads to use.
    * @defaultValue number of CPU cores available - 1 (minimum 1)
    */
   maxWorkerThreads?: number;
   /**
-   * Action to perform when a worker thread fails to convert a page:
-   *
-   * `retry`: will retry once to convert the page.
-   *
-   * `nextPage`: will skip the page and continue with the next one.
-   *
-   * `abort`: will crash and stop the conversion process.
+   * Action to perform when a worker thread fails to convert a page. `retry`: will retry once to convert the page, `nextPage`: will skip the page and continue with the next one, `abort`: will crash and stop the conversion process.
    * @defaultValue 'abort'
    */
   workerActionOnFailure?: WorkerFailureAction;

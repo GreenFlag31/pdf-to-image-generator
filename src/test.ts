@@ -17,9 +17,9 @@ async function convert() {
   await promises.mkdir(dir1, { recursive: true });
 
   const conversionsOptions: ConversionOptions = {
-    // imageFolderName: dir1,
+    imageFolderName: dir1,
     pages: [0, 1, 2, 3, 4, 5],
-    // log: 'debug',
+    log: 'debug',
     useWorkerThreads: true,
     // workerStrategy: 'dynamic',
     workerActionOnFailure: 'nextPage',
@@ -27,7 +27,6 @@ async function convert() {
   };
 
   const conversion = await convertToImages(filePath, conversionsOptions);
-  log('Conversion completed. Converted images:', conversion);
 }
 
 convert();

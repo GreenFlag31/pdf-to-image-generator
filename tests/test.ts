@@ -1,7 +1,13 @@
 import path from 'path';
 import { promises } from 'node:fs';
 import { convertToImages } from '../src/pdf-to-image';
-import { ConversionOptions } from '../src/interfaces';
+import { ConversionOptions, ProgressData } from '../src/interfaces';
+
+function progressCallback(data: ProgressData) {
+  console.log(
+    `Page ${data.pageNumber} converted. Progress: ${data.pageIndex}/${data.totalPages} (${data.progress}%)`,
+  );
+}
 
 async function convert() {
   const filePath = path.join(__dirname, '../test-data/large_pdf.pdf');
@@ -12,10 +18,11 @@ async function convert() {
   const conversionsOptions: ConversionOptions = {
     imageFolderName: dir1,
     pages: [0, 1, 2, 3, 4, 5],
-    log: 'info',
+    log: 'debug',
     useWorkerThreads: true,
     // workerStrategy: 'dynamic',
     workerActionOnFailure: 'nextPage',
+    // progressCallback,
   };
 
   const conversion = await convertToImages(filePath, conversionsOptions);
