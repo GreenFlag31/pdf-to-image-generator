@@ -94,8 +94,8 @@ async function convertToImages(file: string | Buffer, options: ConversionOptions
     const results = await handleConversion(generalConvertData, configuration, log);
 
     const endTime = performance.now();
-    const durationMs = differentialToTwoDigits(endTime, startTime);
 
+    const durationMs = differentialToTwoDigits(endTime, startTime);
     logger(log, 'info', `Pages converted (${pagesToConvert.length}): ${pagesToConvert.join(', ')}`);
     logger(
       log,

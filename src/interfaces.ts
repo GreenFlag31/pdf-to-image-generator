@@ -120,7 +120,7 @@ export type ConversionOptions = {
    */
   type?: ImageType;
   /**
-   * The name of the folder where images will be rendered.
+   * The absolute path of the folder where images will be rendered.
    * @defaultValue undefined
    */
   imageFolderName?: string;
