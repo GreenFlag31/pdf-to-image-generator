@@ -106,7 +106,7 @@ export type ImageType = 'png' | 'jpeg';
 /**
  * The options of images rendering.
  */
-export type ConversionOptions = {
+export interface ConversionOptions {
   /**
    * Controls scaling (+- equivalent to zooming).
    * Increasing scale increases quality, size and time to render the images.

@@ -47,7 +47,7 @@ const conversion = await convertToImages(filePath, conversionsOptions);
 | `imageFileName`         | `string`                                 | `undefined`             | Name of the output image file.                                                                              |
 | `pages`                 | `number[]`                               | `[]` (all pages)        | Pages to render (0-based index). Pages outside the PDF range are ignored.                                   |
 | `password`              | `string`                                 | `undefined`             | Password used to authenticate protected PDF files.                                                          |
-| `useWorkerThread`       | `boolean`                                | `false`                 | Enable worker threads to perform conversion in parallel.                                                    |
+| `useWorkerThreads`      | `boolean`                                | `false`                 | Enable worker threads to perform conversion in parallel.                                                    |
 | `workerStrategy`        | `'static' \| 'dynamic'`                  | `static`                | Worker scheduling strategy.                                                                                 |
 | `maxWorkerThreads`      | `number`                                 | `CPU cores - 1 (min 1)` | Maximum number of worker threads to use.                                                                    |
 | `workerActionOnFailure` | `'retry' \| 'nextPage' \| 'abort'`       | `abort`                 | Action to perform when a worker thread fails to convert a page.                                             |

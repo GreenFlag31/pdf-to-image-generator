@@ -1,23 +1,23 @@
-const assert = require('node:assert');
-const { describe, it } = require('node:test');
-const path = require('path');
-const promises = require('node:fs/promises');
-const PDFToImage = require('../dist/pdf-to-image.js');
+import assert from 'node:assert';
+import { describe, it } from 'node:test';
+import path from 'path';
+import promises from 'node:fs/promises';
+import { convertToImages } from '../dist/pdf-to-image.js';
+import { ConversionOptions } from '../src/interfaces.js';
 const dir1 = 'upload/';
 
-async function testingConvert(fileName, options) {
+async function testingConvert(fileName: string, options: ConversionOptions) {
   await promises.rm(dir1, { recursive: true, force: true });
 
   const filePath = path.join(process.cwd(), `test-data/${fileName}.pdf`);
-  const res = await PDFToImage.convertToImages(filePath, options);
+  const res = await convertToImages(filePath, options);
 
   return res;
 }
 
 describe.skip('pdf output', () => {
   it('should output two pages', async () => {
-    /** @type {import('../src/interfaces').ConversionOptions} */
-    const conversionOptions = {
+    const conversionOptions: ConversionOptions = {
       imageFolderName: dir1,
       pages: [1, 2],
     };
@@ -27,8 +27,7 @@ describe.skip('pdf output', () => {
   });
 
   it('output should physically exists', async () => {
-    /** @type {import('../src/interfaces').ConversionOptions} */
-    const conversionOptions = {
+    const conversionOptions: ConversionOptions = {
       imageFolderName: dir1,
       imageFileName: 'this-is-my-custom-file-name',
       type: 'jpeg',
@@ -37,16 +36,15 @@ describe.skip('pdf output', () => {
     };
 
     const convertion = await testingConvert('rich-pdf-with-images-form-text', conversionOptions);
-    const stat0 = await promises.stat(convertion[0].path);
-    const stat1 = await promises.stat(convertion[1].path);
+    const stat0 = await promises.stat(convertion[0].path!);
+    const stat1 = await promises.stat(convertion[1].path!);
 
     assert.equal(stat0.isFile(), true);
     assert.equal(stat1.isFile(), true);
   });
 
   it('no output should physically exists without outputFolderName', async () => {
-    /** @type {import('../src/interfaces').ConversionOptions} */
-    const conversionOptions = { pages: [1] };
+    const conversionOptions: ConversionOptions = { pages: [1] };
 
     const convertion = await testingConvert('rich-pdf-with-images-form-text', conversionOptions);
 
@@ -54,8 +52,7 @@ describe.skip('pdf output', () => {
   });
 
   it('includeBufferContent should not be present by default', async () => {
-    /** @type {import('../src/interfaces').ConversionOptions} */
-    const conversionOptions = {
+    const conversionOptions: ConversionOptions = {
       imageFolderName: dir1,
       imageFileName: 'this-is-my-custom-file-name',
       pages: [1],
@@ -71,8 +68,7 @@ describe.skip('checking: fileName, extension, dirName', () => {
     const outputFileName = 'this-is-my-custom-file-name';
     const extension = 'jpeg';
 
-    /** @type {import('../src/interfaces').ConversionOptions} */
-    const conversionOptions = {
+    const conversionOptions: ConversionOptions = {
       imageFolderName: dir1,
       imageFileName: 'this-is-my-custom-file-name',
       pages: [1, 2],
@@ -81,14 +77,14 @@ describe.skip('checking: fileName, extension, dirName', () => {
 
     const convertion = await testingConvert('rich-pdf-with-images-form-text', conversionOptions);
 
-    assert.equal(convertion[0].path.endsWith(`${outputFileName}_1.${extension}`), true);
-    assert.equal(convertion[1].path.endsWith(`${outputFileName}_2.${extension}`), true);
+    assert.equal(convertion[0].path!.endsWith(`${outputFileName}_1.${extension}`), true);
+    assert.equal(convertion[1].path!.endsWith(`${outputFileName}_2.${extension}`), true);
   });
 
   it('fileName and png extension should be correct', async () => {
     const outputFileName = 'this-is-my-custom-file-name';
     const extension = 'png';
-    const conversionOptions = {
+    const conversionOptions: ConversionOptions = {
       imageFileName: outputFileName,
       imageFolderName: dir1,
       type: extension,
@@ -97,13 +93,13 @@ describe.skip('checking: fileName, extension, dirName', () => {
     };
     const convertion = await testingConvert('rich-pdf-with-images-form-text', conversionOptions);
 
-    assert.equal(convertion[0].path.endsWith(`${outputFileName}_1.${extension}`), true);
-    assert.equal(convertion[1].path.endsWith(`${outputFileName}_2.${extension}`), true);
+    assert.equal(convertion[0].path!.endsWith(`${outputFileName}_1.${extension}`), true);
+    assert.equal(convertion[1].path!.endsWith(`${outputFileName}_2.${extension}`), true);
   });
 
   it('extension should be png by default', async () => {
     const outputFileName = 'this-is-my-custom-file-name';
-    const conversionOptions = {
+    const conversionOptions: ConversionOptions = {
       imageFileName: outputFileName,
       imageFolderName: dir1,
       scale: 2,
@@ -111,14 +107,14 @@ describe.skip('checking: fileName, extension, dirName', () => {
     };
     const convertion = await testingConvert('rich-pdf-with-images-form-text', conversionOptions);
 
-    assert.equal(convertion[0].path.endsWith('png'), true);
+    assert.equal(convertion[0].path!.endsWith('png'), true);
   });
 
   it('dirName should be correct', async () => {
     const outputFileName = 'this-is-my-custom-file-name';
     const extension = 'png';
 
-    const conversionOptions = {
+    const conversionOptions: ConversionOptions = {
       imageFileName: outputFileName,
       imageFolderName: dir1,
       type: extension,
@@ -127,7 +123,7 @@ describe.skip('checking: fileName, extension, dirName', () => {
     };
 
     const convertion = await testingConvert('rich-pdf-with-images-form-text', conversionOptions);
-    const fileRendered = convertion[0].path;
+    const fileRendered = convertion[0].path!;
     const parentPath = path.join(fileRendered, '../').replaceAll('\\', '/');
 
     assert.equal(parentPath.endsWith(dir1), true);
@@ -136,7 +132,7 @@ describe.skip('checking: fileName, extension, dirName', () => {
 
 describe.skip('indexes', () => {
   it('page index should be correct', async () => {
-    const conversionOptions = {
+    const conversionOptions: ConversionOptions = {
       imageFileName: 'this-is-my-custom-file-name',
       imageFolderName: dir1,
       type: 'jpeg',
@@ -151,7 +147,7 @@ describe.skip('indexes', () => {
   });
 
   it('out of bound index should not be taken into account', async () => {
-    const conversionOptions = {
+    const conversionOptions: ConversionOptions = {
       imageFileName: 'this-is-my-custom-file-name',
       imageFolderName: dir1,
       type: 'jpeg',
@@ -164,7 +160,7 @@ describe.skip('indexes', () => {
   });
 
   it('negative page should not be taken into account', async () => {
-    const conversionOptions = {
+    const conversionOptions: ConversionOptions = {
       imageFileName: 'this-is-my-custom-file-name',
       imageFolderName: dir1,
       type: 'jpeg',
@@ -179,9 +175,9 @@ describe.skip('indexes', () => {
 
 describe.skip('workerthread', () => {
   it('workerthread should handle page conversion correctly', async () => {
-    const conversionOptions = {
+    const conversionOptions: ConversionOptions = {
       imageFolderName: dir1,
-      useWorkerThread: true,
+      useWorkerThreads: true,
       pages: [9, 11],
     };
 
@@ -192,9 +188,9 @@ describe.skip('workerthread', () => {
   });
 
   it('workerthread with dynamic strategy', async () => {
-    const conversionOptions = {
+    const conversionOptions: ConversionOptions = {
       imageFolderName: dir1,
-      useWorkerThread: true,
+      useWorkerThreads: true,
       workerStrategy: 'dynamic',
       pages: [1, 2],
     };
@@ -245,7 +241,7 @@ describe('progress cb', () => {
 
 describe.skip('others', () => {
   it('should be possible to write an image manually with generated buffer content', async () => {
-    const conversionOptions = {
+    const conversionOptions: ConversionOptions = {
       pages: [1],
       includeBufferContent: true,
     };
@@ -253,7 +249,7 @@ describe.skip('others', () => {
     const convertion = await testingConvert('rich-pdf-with-images-form-text', conversionOptions);
 
     const endPath = path.join(__dirname, '../custom.png');
-    await promises.writeFile(endPath, convertion[0].content);
+    await promises.writeFile(endPath, convertion[0].content!);
 
     const stat = await promises.stat(endPath);
     assert.equal(stat.isFile(), true);
